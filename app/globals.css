@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #10161f;
+  --ink-2: #1b2436;
+  --paper: #f1ecdd;
+  --paper-dim: #e7e0cc;
+  --brass: #c69a3c;
+  --seal: #b23b2e;
+  --verdigris: #4f8c82;
+  --muted: #8e97a8;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body), Arial, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.font-mono {
+  font-family: var(--font-mono), monospace;
+}
+
+::selection {
+  background: var(--brass);
+  color: var(--ink);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 3px;
+}
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 999px; }
+
+/* FIELD LABEL — form-field style section eyebrow */
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+.field-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--brass), transparent);
+}
+
+/* DOC CARD — manifest line-item card */
+.doc-card {
+  position: relative;
+  background: var(--paper);
+  border-radius: 6px;
+  padding: 32px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  border-top: 3px dashed var(--ink);
+}
+
+/* MANIFEST STRIP — ticker of stats under the hero */
+.manifest-strip {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid rgba(198, 154, 60, 0.35);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.manifest-strip > div {
+  flex: 1 1 160px;
+  padding: 22px 26px;
+  border-left: 1px solid rgba(198, 154, 60, 0.25);
+}
+.manifest-strip > div:first-child { border-left: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
