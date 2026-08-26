@@ -1,14 +1,36 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import FieldLabel from "../../components/FieldLabel";
 import Link from "next/link";
 import AuthGuard from "../../components/AuthGuard";
-import { HS_SECTIONS, HS_CHAPTERS } from "../../data/tradeData";
+import { HS_SECTIONS } from "../../data/tradeData";
 
 export default function HsCodesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSection, setSelectedSection] = useState("all");
+  const [dbHsCodes, setDbHsCodes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadHsCodes() {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: "200" });
+        if (searchQuery.trim()) params.set("q", searchQuery.trim());
+        const res = await fetch(`/api/hs-codes?${params.toString()}`, { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setDbHsCodes(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load HS codes from API", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadHsCodes();
+  }, [searchQuery]);
 
   // Duty Calculator State
   const [cifValue, setCifValue] = useState(10000);
@@ -24,18 +46,32 @@ export default function HsCodesPage() {
   const totalCustomsDuty = calculatedBcd + calculatedSws + calculatedIgst;
   const totalLandedCost = cifValue + totalCustomsDuty;
 
-  // Filtered chapters
+  // Group DB HS codes by chapter
   const filteredChapters = useMemo(() => {
-    return HS_CHAPTERS.filter((ch) => {
-      const matchSection = selectedSection === "all" || ch.section === selectedSection;
-      const matchSearch =
-        !searchQuery ||
-        ch.chapter.includes(searchQuery) ||
-        ch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ch.topCodes.some((code) => code.includes(searchQuery));
-      return matchSection && matchSearch;
+    const map = new Map();
+    dbHsCodes.forEach((item) => {
+      const ch = item.chapter || item.code.slice(0, 2);
+      if (!map.has(ch)) {
+        map.set(ch, {
+          chapter: ch,
+          section: "I",
+          name: item.description,
+          bcd: item.bcd || "10%",
+          igst: item.igst || "18%",
+          topCodes: [],
+        });
+      }
+      const entry = map.get(ch);
+      if (item.code && !entry.topCodes.includes(item.code)) {
+        entry.topCodes.push(item.code);
+      }
     });
-  }, [searchQuery, selectedSection]);
+
+    return Array.from(map.values()).filter((ch) => {
+      const matchSection = selectedSection === "all" || ch.section === selectedSection;
+      return matchSection;
+    });
+  }, [dbHsCodes, selectedSection]);
 
   return (
     <AuthGuard>

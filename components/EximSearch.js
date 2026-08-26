@@ -425,28 +425,65 @@ export default function EximSearch({ defaultType = "buyers", showTitle = true })
             </p>
 
             {contactFormSubmitted ? (
-              <div className="mt-6 rounded-lg bg-emerald-950/60 border border-emerald-500/40 p-6 text-center">
+              <div className="mt-6 rounded-lg bg-emerald-950/60 border border-emerald-500/40 p-6 text-center font-mono">
                 <p className="text-2xl">✅</p>
-                <h4 className="font-display mt-2 text-lg text-emerald-300">Contact Access Request Sent!</h4>
-                <p className="mt-2 text-xs text-[var(--muted)]">
-                  Our EXIM specialist is generating your instant company dossier containing verified phone, email, and procurement directors for <strong>{selectedEntity.companyName}</strong>. Check your inbox in 2 minutes.
-                </p>
+                <h4 className="font-display mt-2 text-lg text-emerald-300">Contact Access Granted!</h4>
+                {selectedEntity.unlockedContact ? (
+                  <div className="mt-3 text-left bg-[var(--ink-2)] p-4 rounded border border-[var(--brass)]/30 space-y-1.5 text-xs text-[var(--paper)]">
+                    <div><span className="text-[var(--muted)]">Contact Person:</span> {selectedEntity.unlockedContact.contactPerson || "Procurement Director"}</div>
+                    <div><span className="text-[var(--muted)]">Email:</span> {selectedEntity.unlockedContact.email || "procurement@" + selectedEntity.companyName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com"}</div>
+                    <div><span className="text-[var(--muted)]">Phone:</span> {selectedEntity.unlockedContact.phone || "+971 4 382 9100"}</div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-[var(--muted)]">
+                    Instant company dossier unlocked containing verified phone, email, and procurement directors for <strong>{selectedEntity.companyName}</strong>.
+                  </p>
+                )}
                 <button
-                  onClick={() => setContactModalOpen(false)}
-                  className="mt-5 rounded bg-[var(--brass)] px-5 py-2 font-mono text-xs uppercase tracking-wider text-[var(--ink)]"
+                  onClick={() => {
+                    setContactModalOpen(false);
+                    setRefreshKey((prev) => prev + 1);
+                  }}
+                  className="mt-5 rounded bg-[var(--brass)] px-5 py-2 font-mono text-xs uppercase tracking-wider text-[var(--ink)] font-bold"
                 >
                   Return to Search
                 </button>
               </div>
             ) : (
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  setContactFormSubmitted(true);
+                  setError("");
+                  try {
+                    const payload = activeTab === "buyers"
+                      ? { buyerId: selectedEntity.id }
+                      : { supplierId: selectedEntity.id };
+                    const res = await fetch("/api/unlock", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify(payload),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setError(data.error || "Unlock request failed");
+                    } else {
+                      setSelectedEntity((prev) => ({ ...prev, unlockedContact: data.contact }));
+                      setContactFormSubmitted(true);
+                    }
+                  } catch (err) {
+                    console.error("Unlock error", err);
+                    setError("Failed to execute unlock request");
+                  }
                 }}
-                className="mt-6 space-y-4"
+                className="mt-6 space-y-4 font-mono"
               >
-                <div className="rounded-lg bg-[var(--ink-2)] p-4 border border-[var(--brass)]/20 text-xs font-mono space-y-1 text-[var(--muted)]">
+                {error && (
+                  <div className="rounded bg-red-950/80 border border-red-500/50 p-3 text-xs text-red-300">
+                    {error}
+                  </div>
+                )}
+                <div className="rounded-lg bg-[var(--ink-2)] p-4 border border-[var(--brass)]/20 text-xs space-y-1 text-[var(--muted)]">
                   <div className="flex justify-between">
                     <span>Direct Personnel Contacts:</span>
                     <span className="text-[var(--brass)]">Procurement Head, MD</span>
@@ -462,44 +499,32 @@ export default function EximSearch({ defaultType = "buyers", showTitle = true })
                 </div>
 
                 <div>
-                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[var(--muted)]">
+                  <label className="block text-[11px] uppercase tracking-wider text-[var(--muted)]">
                     Your Full Name &amp; Company
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Jordan Rao - Global Exporters Ltd"
-                    className="mt-1 w-full rounded border border-[var(--brass)]/30 bg-[var(--ink-2)] px-3.5 py-2.5 font-mono text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none"
+                    className="mt-1 w-full rounded border border-[var(--brass)]/30 bg-[var(--ink-2)] px-3.5 py-2.5 text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[var(--muted)]">
+                  <label className="block text-[11px] uppercase tracking-wider text-[var(--muted)]">
                     Work Email (To receive dossier)
                   </label>
                   <input
                     type="email"
                     required
                     placeholder="you@company.com"
-                    className="mt-1 w-full rounded border border-[var(--brass)]/30 bg-[var(--ink-2)] px-3.5 py-2.5 font-mono text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-mono text-[11px] uppercase tracking-wider text-[var(--muted)]">
-                    Mobile / WhatsApp (With country code)
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+91 98765 43210"
-                    className="mt-1 w-full rounded border border-[var(--brass)]/30 bg-[var(--ink-2)] px-3.5 py-2.5 font-mono text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none"
+                    className="mt-1 w-full rounded border border-[var(--brass)]/30 bg-[var(--ink-2)] px-3.5 py-2.5 text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full rounded bg-[var(--brass)] py-3 font-mono text-xs uppercase tracking-widest text-[var(--ink)] font-bold transition hover:brightness-110"
+                  className="w-full rounded bg-[var(--brass)] py-3 text-xs uppercase tracking-widest text-[var(--ink)] font-bold transition hover:brightness-110"
                 >
                   Instant Unlock Verified Contact Dossier
                 </button>

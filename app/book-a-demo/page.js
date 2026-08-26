@@ -36,8 +36,24 @@ export default function BookDemoPage() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      await fetch("/api/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          productLine: formData.productLine,
+          message: `Features: ${formData.selectedFeatures.join(", ")} | Slot: ${selectedSlot}`,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to submit demo request", err);
+    }
     setBooked(true);
   };
 

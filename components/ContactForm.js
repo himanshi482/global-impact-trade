@@ -5,10 +5,27 @@ import { useState } from "react";
 export default function ContactForm() {
   const [sent, setSent] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // Wire this up to your email service, CRM, or API route to make it live.
-    setSent(true);
+    const formData = new FormData(e.target);
+    const payload = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      company: formData.get("company"),
+      message: formData.get("message"),
+    };
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setSent(true);
+      }
+    } catch (err) {
+      console.error("Failed to submit contact form", err);
+    }
   }
 
   if (sent) {
