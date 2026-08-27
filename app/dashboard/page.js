@@ -1,16 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import FieldLabel from "../../components/FieldLabel";
 import EximSearch from "../../components/EximSearch";
 import AuthGuard from "../../components/AuthGuard";
-import { RECENT_SHIPMENTS } from "../../data/tradeData";
 import { useAuth } from "../../context/AuthContext";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("search"); // "search" | "shipments" | "tools"
+
+  const [shipments, setShipments] = useState([]);
+  const [shipmentsError, setShipmentsError] = useState(null);
+  const [shipmentsStatus, setShipmentsStatus] = useState("idle"); // "idle" | "loading" | "done"
+
+  // Only hit the API the first time the "shipments" tab is opened.
+  useEffect(() => {
+    if (activeTab !== "shipments" || shipmentsStatus !== "idle") return;
+    let cancelled = false;
+
+    fetch("/api/shipments?limit=10&sort=shipmentDate:desc")
+      .then((res) => {
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        setShipments(json.data || []);
+        setShipmentsStatus("done");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("GET /api/shipments failed:", err);
+        setShipmentsError("Couldn't load shipments right now.");
+        setShipmentsStatus("done");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, shipmentsStatus]);
+
+  const shipmentsLoading = activeTab === "shipments" && shipmentsStatus !== "done";
 
   return (
     <AuthGuard>
@@ -154,25 +186,53 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--brass)]/10 text-[var(--paper)]">
-                    {RECENT_SHIPMENTS.map((s) => (
-                      <tr key={s.blNumber} className="hover:bg-[var(--ink-2)]/40 transition">
-                        <td className="p-4">
-                          <span className="font-bold text-[var(--brass)]">{s.blNumber}</span>
-                          <p className="text-[10px] text-[var(--muted)]">{s.date}</p>
+                    {shipmentsLoading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i}>
+                          <td colSpan={6} className="p-4">
+                            <div className="h-4 w-full animate-pulse rounded bg-[var(--ink-2)]" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : shipmentsError ? (
+                      <tr>
+                        <td colSpan={6} className="p-4 text-center text-red-300">
+                          {shipmentsError}
                         </td>
-                        <td className="p-4">{s.shipper}</td>
-                        <td className="p-4 font-semibold text-sky-400">{s.consignee}</td>
-                        <td className="p-4">
-                          <span className="text-[var(--brass)]">HS {s.hsCode}</span>
-                          <p className="text-[10px] text-[var(--muted)]">{s.description}</p>
-                        </td>
-                        <td className="p-4">
-                          <p>{s.pol}</p>
-                          <p className="text-[var(--brass)]">↳ {s.pod}</p>
-                        </td>
-                        <td className="p-4 font-bold text-emerald-400">{s.valueUSD}</td>
                       </tr>
-                    ))}
+                    ) : shipments.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-4 text-center text-[var(--muted)]">
+                          No shipment records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      shipments.map((s) => (
+                        <tr key={s.id} className="hover:bg-[var(--ink-2)]/40 transition">
+                          <td className="p-4">
+                            <span className="font-bold text-[var(--brass)]">SHP-{s.id}</span>
+                            <p className="text-[10px] text-[var(--muted)]">
+                              {s.shipmentDate ? new Date(s.shipmentDate).toLocaleDateString() : "—"}
+                            </p>
+                          </td>
+                          <td className="p-4">{s.exporter}</td>
+                          <td className="p-4 font-semibold text-sky-400">{s.importer}</td>
+                          <td className="p-4">
+                            <span className="text-[var(--brass)]">HS {s.hsCode}</span>
+                            <p className="text-[10px] text-[var(--muted)]">{s.product}</p>
+                          </td>
+                          <td className="p-4">
+                            <p>{s.originPort || s.originCountry}</p>
+                            <p className="text-[var(--brass)]">↳ {s.destinationPort || s.destinationCountry}</p>
+                          </td>
+                          <td className="p-4 font-bold text-emerald-400">
+                            {typeof s.shipmentValue === "number"
+                              ? `$${s.shipmentValue.toLocaleString()}`
+                              : s.shipmentValue}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -1,12 +1,38 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import FieldLabel from "../../components/FieldLabel";
 import EximSearch from "../../components/EximSearch";
 import AuthGuard from "../../components/AuthGuard";
-import { RECENT_SHIPMENTS, HS_CHAPTERS } from "../../data/tradeData";
 import Link from "next/link";
 
 export default function TradeDataPage() {
+  const [shipments, setShipments] = useState([]);
+  const [shipmentsLoading, setShipmentsLoading] = useState(true);
+  const [shipmentsError, setShipmentsError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/shipments?limit=10&sort=shipmentDate:desc")
+      .then((res) => {
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        return res.json();
+      })
+      .then((json) => {
+        if (!cancelled) setShipments(json.data || []);
+      })
+      .catch((err) => {
+        console.error("GET /api/shipments failed:", err);
+        if (!cancelled) setShipmentsError("Couldn't load the live manifest feed.");
+      })
+      .finally(() => {
+        if (!cancelled) setShipmentsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <AuthGuard>
       <main className="min-h-screen">
@@ -99,35 +125,62 @@ export default function TradeDataPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--brass)]/10 text-[var(--paper)]">
-                  {RECENT_SHIPMENTS.map((s) => (
-                    <tr key={s.blNumber} className="hover:bg-[var(--ink-2)]/60 transition">
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="font-bold text-[var(--brass)]">{s.blNumber}</span>
-                        <p className="text-[10px] text-[var(--muted)]">{s.date}</p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="font-medium">{s.shipper}</span>
-                        <p className="text-[10px] text-emerald-400">✓ Audited Supplier</p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="font-medium">{s.consignee}</span>
-                        <p className="text-[10px] text-sky-400">✓ Verified Buyer</p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="font-bold text-[var(--brass)]">HS {s.hsCode}</span>
-                        <p className="text-[11px] text-[var(--muted)] line-clamp-1">{s.description}</p>
-                        <p className="text-[10px] text-[var(--muted)]">{s.weight} · {s.containerCount}</p>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <p>{s.pol}</p>
-                        <p className="text-[var(--brass)]">↳ {s.pod}</p>
-                        <p className="text-[10px] text-[var(--muted)]">{s.vessel}</p>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap font-bold text-emerald-400">
-                        {s.valueUSD}
+                  {shipmentsLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        <td colSpan={6} className="px-4 py-4">
+                          <div className="h-4 w-full animate-pulse rounded bg-[var(--ink-2)]" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : shipmentsError ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-red-300">
+                        {shipmentsError}
                       </td>
                     </tr>
-                  ))}
+                  ) : shipments.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-[var(--muted)]">
+                        No shipment records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    shipments.map((s) => (
+                      <tr key={s.id} className="hover:bg-[var(--ink-2)]/60 transition">
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="font-bold text-[var(--brass)]">SHP-{s.id}</span>
+                          <p className="text-[10px] text-[var(--muted)]">
+                            {s.shipmentDate ? new Date(s.shipmentDate).toLocaleDateString() : "—"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="font-medium">{s.exporter}</span>
+                          <p className="text-[10px] text-emerald-400">✓ Audited Supplier</p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="font-medium">{s.importer}</span>
+                          <p className="text-[10px] text-sky-400">✓ Verified Buyer</p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="font-bold text-[var(--brass)]">HS {s.hsCode}</span>
+                          <p className="text-[11px] text-[var(--muted)] line-clamp-1">{s.product}</p>
+                          <p className="text-[10px] text-[var(--muted)]">
+                            {s.quantity} {s.unit}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <p>{s.originPort || s.originCountry}</p>
+                          <p className="text-[var(--brass)]">↳ {s.destinationPort || s.destinationCountry}</p>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap font-bold text-emerald-400">
+                          {typeof s.shipmentValue === "number"
+                            ? `$${s.shipmentValue.toLocaleString()}`
+                            : s.shipmentValue}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
