@@ -2,8 +2,12 @@ import { cookies } from "next/headers";
 import { query, transaction } from "@/lib/db";
 import { hashPassword, createSessionToken, sessionCookieOptions } from "@/lib/auth";
 import { registerSchema, validateBody } from "@/lib/validation";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(request) {
+  const rateLimit = rateLimitResponse(request, "register");
+  if (rateLimit) return rateLimit;
+
   let body;
   try {
     body = await request.json();

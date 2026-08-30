@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refreshUser().finally(() => setLoading(false));
+    refreshUser().finally(() => setLoading(false)); // eslint-disable-line react-hooks/set-state-in-effect
   }, [refreshUser]);
 
   /**

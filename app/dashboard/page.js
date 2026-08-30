@@ -15,6 +15,24 @@ export default function DashboardPage() {
   const [shipmentsError, setShipmentsError] = useState(null);
   const [shipmentsStatus, setShipmentsStatus] = useState("idle"); // "idle" | "loading" | "done"
 
+  const [savedAnalyses, setSavedAnalyses] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/market-analysis/saved", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { savedAnalyses: [] }))
+      .then((data) => {
+        if (!cancelled && data?.savedAnalyses) {
+          setSavedAnalyses(data.savedAnalyses.slice(0, 3));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Only hit the API the first time the "shipments" tab is opened.
   useEffect(() => {
     if (activeTab !== "shipments" || shipmentsStatus !== "idle") return;
@@ -112,6 +130,52 @@ export default function DashboardPage() {
               <p className="font-display text-lg font-bold text-[var(--paper)] mt-1.5">+91 40 6810 9999</p>
               <p className="text-[10px] text-[var(--brass)] mt-1">24/7 Priority Support</p>
             </div>
+          </div>
+
+          {/* Market Opportunities & Saved Analyses Banner */}
+          <div className="rounded-2xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 shadow-xl mb-8 font-mono text-xs">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+              <div>
+                <span className="text-[10px] text-[var(--brass)] font-bold uppercase">Advanced Trade Intelligence</span>
+                <h2 className="font-display text-xl text-[var(--paper)] mt-0.5">
+                  Market Opportunities &amp; Corridor Dossiers
+                </h2>
+              </div>
+              <Link
+                href="/market-analysis"
+                className="rounded bg-[var(--brass)] px-4 py-2 font-bold uppercase text-[var(--ink)] hover:brightness-110 shadow transition text-center"
+              >
+                ⚡ Analyze Market
+              </Link>
+            </div>
+
+            {savedAnalyses.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-3 pt-2">
+                {savedAnalyses.map((sa) => (
+                  <Link
+                    key={sa.id}
+                    href="/market-analysis"
+                    className="rounded-xl border border-[var(--brass)]/20 bg-[var(--ink)] p-3.5 hover:border-[var(--brass)] transition block group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="font-bold text-[var(--paper)] group-hover:text-[var(--brass)]">
+                        {sa.country || "Global"}
+                      </span>
+                      <span className="rounded bg-emerald-950 border border-emerald-500/40 px-1.5 py-0.2 text-[10px] text-emerald-400 font-bold">
+                        {sa.opportunityScore}/100
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[var(--muted)] mt-1">
+                      HS Code: {sa.hsCode || "General"} · {sa.direction || "export"}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[var(--muted)] text-[11px]">
+                Explore top global destination markets, compute deterministic opportunity scores, and benchmark customs manifest trade velocity in the Market Analysis suite.
+              </p>
+            )}
           </div>
 
           {/* Navigation Tabs */}

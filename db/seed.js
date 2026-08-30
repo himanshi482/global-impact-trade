@@ -7,6 +7,7 @@
 //
 // Run with: npm run db:seed
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const mysql = require("mysql2/promise");

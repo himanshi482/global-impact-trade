@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
                 GlobeBridge Admin Console
               </h1>
               <p className="mt-1 text-xs text-[var(--muted)] font-mono">
-                Manage accounts, buyers, suppliers, HS codes, and incoming trade requests.
+                Manage accounts, buyers, suppliers, shipments, HS codes, and incoming trade requests.
               </p>
             </div>
             <div className="flex gap-2 font-mono text-xs">
@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
           ) : (
             <div className="space-y-8 font-mono">
               {/* Metrics Grid */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <div className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 shadow-md">
                   <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block">Total Users</span>
                   <span className="font-display mt-2 text-3xl text-[var(--paper)] block">{stats?.users || 0}</span>
@@ -98,7 +98,7 @@ export default function AdminDashboardPage() {
                   <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block">Foreign Buyers</span>
                   <span className="font-display mt-2 text-3xl text-[var(--paper)] block">{stats?.buyers || 0}</span>
                   <Link href="/admin/buyers" className="mt-3 inline-block text-[11px] text-[var(--brass)] hover:underline">
-                    Manage Buyers Directory →
+                    Manage Buyers →
                   </Link>
                 </div>
 
@@ -106,7 +106,23 @@ export default function AdminDashboardPage() {
                   <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block">Verified Suppliers</span>
                   <span className="font-display mt-2 text-3xl text-[var(--paper)] block">{stats?.suppliers || 0}</span>
                   <Link href="/admin/suppliers" className="mt-3 inline-block text-[11px] text-[var(--brass)] hover:underline">
-                    Manage Suppliers Directory →
+                    Manage Suppliers →
+                  </Link>
+                </div>
+
+                <div className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 shadow-md">
+                  <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block">Shipments</span>
+                  <span className="font-display mt-2 text-3xl text-[var(--paper)] block">{stats?.shipments || 0}</span>
+                  <Link href="/admin/shipments" className="mt-3 inline-block text-[11px] text-[var(--brass)] hover:underline">
+                    Manage Shipments →
+                  </Link>
+                </div>
+
+                <div className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 shadow-md">
+                  <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block">HS Codes</span>
+                  <span className="font-display mt-2 text-3xl text-[var(--paper)] block">{stats?.hsCodes || 0}</span>
+                  <Link href="/admin/hs-codes" className="mt-3 inline-block text-[11px] text-[var(--brass)] hover:underline">
+                    Manage HS Codes →
                   </Link>
                 </div>
 
@@ -116,7 +132,7 @@ export default function AdminDashboardPage() {
                     {(stats?.pendingContacts || 0) + (stats?.pendingDemos || 0)}
                   </span>
                   <Link href="/admin/requests" className="mt-3 inline-block text-[11px] text-[var(--brass)] hover:underline">
-                    Review Inbound Leads →
+                    Review Leads →
                   </Link>
                 </div>
               </div>
@@ -159,6 +175,32 @@ export default function AdminDashboardPage() {
                   </h3>
                   <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
                     Manage global seller profiles, HS Code assignments, and export capacities.
+                  </p>
+                </Link>
+
+                <Link
+                  href="/admin/shipments"
+                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">📦</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Shipments Records CRUD
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Create, edit, or delete bill of lading shipment records. Search by product, HS code, or country.
+                  </p>
+                </Link>
+
+                <Link
+                  href="/admin/hs-codes"
+                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">📋</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    HS Codes Database CRUD
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Manage the ITC-HS code tariff database with duty rates. Add, edit, or remove HS code entries.
                   </p>
                 </Link>
 

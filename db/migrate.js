@@ -5,6 +5,7 @@
 // Tracks applied migrations in a `_migrations` table so re-running this is
 // safe — already-applied files are skipped.
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");

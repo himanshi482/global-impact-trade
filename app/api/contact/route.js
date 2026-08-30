@@ -1,6 +1,10 @@
 import { query } from "@/lib/db";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(request) {
+  const rateLimit = rateLimitResponse(request, "contact");
+  if (rateLimit) return rateLimit;
+
   let body;
   try {
     body = await request.json();

@@ -170,7 +170,7 @@ export default function SearchHistoryPage() {
                     </div>
                     <h3 className="font-display mt-3 text-lg text-[var(--paper)]">{item.name}</h3>
                     {item.query && (
-                      <p className="mt-1 text-xs text-[var(--muted)]">Query: "{item.query}"</p>
+                      <p className="mt-1 text-xs text-[var(--muted)]">Query: &quot;{item.query}&quot;</p>
                     )}
                   </div>
 
