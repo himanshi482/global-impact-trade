@@ -369,7 +369,7 @@ diff --git a/lib/limits.js b/lib/limits.js
 index b032c17..6240ee8 100644
 --- a/lib/limits.js
 +++ b/lib/limits.js
-@@ -1,11 +1,14 @@
+@@ -1,10 +1,13 @@
  import { query } from "./db";
  
 +// Quota per plan, matching the tiers on /plans-pricing:

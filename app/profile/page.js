@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [quota, setQuota] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -19,6 +20,13 @@ export default function ProfilePage() {
     city: "",
     website: "",
   });
+
+  useEffect(() => {
+    fetch("/api/unlock", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setQuota(data.quota))
+      .catch((err) => console.error("Failed to load unlock quota", err));
+  }, []);
 
   useEffect(() => {
     async function loadProfile() {
@@ -118,6 +126,19 @@ export default function ProfilePage() {
                       {profile?.plan || "FREE EXPLORER"}
                     </span>
                   </div>
+                  {quota && (
+                    <div>
+                      <span className="text-[var(--muted)] block">Contact Unlocks:</span>
+                      {quota.isUnlimited ? (
+                        <span className="text-emerald-400 font-semibold">Unlimited</span>
+                      ) : (
+                        <span className={quota.remaining === 0 ? "text-red-400 font-semibold" : "text-[var(--paper)]"}>
+                          {quota.used} / {quota.maxAllowed} used
+                          {quota.remaining === 0 && " — upgrade to unlock more"}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <span className="text-[var(--muted)] block">Account Status:</span>
                     <span className="text-emerald-400 font-semibold">Active &amp; Verified</span>
