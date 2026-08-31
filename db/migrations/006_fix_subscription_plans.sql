@@ -5,9 +5,7 @@
 -- lib/limits.js never actually granted quota for.
 -- ---------------------------------------------------------------------
 
--- Migrate any existing rows onto the new naming before changing the ENUM.
+ALTER TABLE subscriptions MODIFY COLUMN plan VARCHAR(50) NOT NULL DEFAULT 'FREE';
 UPDATE subscriptions SET plan = 'GROWTH'  WHERE plan = 'PROFESSIONAL';
 UPDATE subscriptions SET plan = 'CONQUER' WHERE plan = 'ENTERPRISE';
-
-ALTER TABLE subscriptions
-  MODIFY COLUMN plan ENUM('FREE', 'GROWTH', 'CONNECT', 'CONQUER') NOT NULL DEFAULT 'FREE';
+ALTER TABLE subscriptions MODIFY COLUMN plan ENUM('FREE', 'GROWTH', 'CONNECT', 'CONQUER') NOT NULL DEFAULT 'FREE';

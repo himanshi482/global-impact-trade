@@ -52,6 +52,16 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### 4. Run End-to-End Tests (Phase 11)
+With the dev server running, execute the full platform E2E verification suite (register → login → search → save → admin CRUD → security gating):
+```bash
+DISABLE_RATE_LIMIT=true npm run test:e2e
+```
+All 8 phases of user, directory, market intelligence, portfolio, unlock, admin, and security boundary assertions should report:
+```
+🎉 ALL END-TO-END (E2E) TESTS PASSED SUCCESSFULLY!
+```
+
 ---
 
 ## Core Platform Features & Routing
@@ -117,6 +127,8 @@ Generates a deterministic 0–100 score normalized across 4 pillars:
 
 ## API Reference
 
+> 📄 **Full API Documentation**: See [`docs/API_DOCUMENTATION.md`](./docs/API_DOCUMENTATION.md) for complete endpoint specs, request/response schemas, error codes, rate limiting details, and sample cURL requests.
+
 ### Authentication Endpoints
 - `POST /api/auth/register` - Create new user account (rate-limited)
 - `POST /api/auth/login` - Authenticate user credentials and establish session cookie (rate-limited)
@@ -158,6 +170,7 @@ Generates a deterministic 0–100 score normalized across 4 pillars:
 - `GET /api/admin/shipments` & `POST /api/admin/shipments` & `PUT /api/admin/shipments/[id]` & `DELETE /api/admin/shipments/[id]` - Shipments CRUD
 - `GET /api/admin/hs-codes` & `POST /api/admin/hs-codes` & `PUT /api/admin/hs-codes/[id]` & `DELETE /api/admin/hs-codes/[id]` - HS Codes CRUD
 - `GET /api/admin/requests` & `PUT /api/admin/requests/[id]` - Contact & demo lead status updates
+- `GET /api/admin/subscriptions` & `PUT /api/admin/subscriptions/[userId]` - Subscription plan management (FREE / GROWTH / CONNECT / CONQUER)
 
 ---
 
