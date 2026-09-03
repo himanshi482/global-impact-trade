@@ -55,13 +55,20 @@ const unlockableFeatures = [
   }
 ];
 
+const portalRoutes = [
+  { label: "Buyer Discovery", href: "/buyer-discovery", desc: "Access verified global importers & foreign procurement contacts", bg: "from-blue-700/40 to-blue-950/60 border-blue-500/40 text-blue-400 hover:border-blue-400", btn: "bg-blue-600 hover:bg-blue-500 text-white" },
+  { label: "Supplier Discovery", href: "/supplier-discovery", desc: "Discover active manufacturers, exporters & supply chain partners", bg: "from-indigo-700/40 to-indigo-950/60 border-indigo-500/40 text-indigo-400 hover:border-indigo-400", btn: "bg-indigo-600 hover:bg-indigo-500 text-white" },
+  { label: "My Leads", href: "/my-leads", desc: "Track, manage, and contact your unlocked enterprise leads", bg: "from-emerald-700/40 to-emerald-950/60 border-emerald-500/40 text-emerald-400 hover:border-emerald-400", btn: "bg-emerald-600 hover:bg-emerald-500 text-white" },
+  { label: "Admin Leads", href: "/admin/leads", desc: "Admin portal for lead inventory, unlock approvals & pipeline", bg: "from-purple-700/40 to-purple-950/60 border-purple-500/40 text-purple-400 hover:border-purple-400", btn: "bg-purple-600 hover:bg-purple-500 text-white" },
+];
+
 export default function Home() {
   const { user: currentUser } = useAuth();
 
   return (
     <main className="min-h-screen">
       {/* HERO SECTION */}
-      <section className="border-b border-[var(--brass)]/20 bg-gradient-to-b from-[var(--ink-2)] via-[var(--ink)] to-[var(--ink)] px-6 pb-20 pt-16 md:pt-28">
+      <section className="border-b border-[var(--brass)]/20 bg-gradient-to-b from-[var(--ink-2)] via-[var(--ink)] to-[var(--ink)] px-6 pb-16 pt-16 md:pt-24">
         <div className="mx-auto max-w-6xl text-center">
           
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brass)]/40 bg-[var(--brass)]/10 px-4 py-1.5 font-mono text-xs uppercase tracking-widest text-[var(--brass)]">
@@ -75,6 +82,30 @@ export default function Home() {
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
             Discover verified foreign buyers, track competitor shipments, and calculate customs tariffs across 181+ countries. Register your business to unlock full platform access.
           </p>
+
+          {/* Quick Hub Navigation Cards */}
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto text-left">
+            {portalRoutes.map((route) => (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={`group flex flex-col justify-between rounded-xl border bg-gradient-to-b p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${route.bg}`}
+              >
+                <div>
+                  <h3 className="font-display text-lg text-[var(--paper)] group-hover:text-[var(--brass)] transition flex items-center justify-between">
+                    <span>{route.label}</span>
+                    <span className="text-xs font-mono opacity-60 group-hover:translate-x-1 transition-transform">→</span>
+                  </h3>
+                  <p className="mt-2 text-xs font-mono text-[var(--muted)] leading-relaxed">{route.desc}</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <span className={`inline-block w-full py-2 px-3 text-center text-xs font-mono font-bold rounded shadow transition ${route.btn}`}>
+                    Open {route.label}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
 
           {/* Primary Action Buttons */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">

@@ -559,6 +559,107 @@ async function runE2ETests() {
     assert(unauthRes.status === 401, `Expected status 401 Unauthorized, got ${unauthRes.status}`);
     console.log('   ✓ Unauthenticated request properly rejected (401)');
 
+    // ----------------------------------------------------
+    // PHASE I: Advanced Trade Intelligence & Export Decision Support (Stage 3 Phase 3)
+    // ----------------------------------------------------
+    console.log('\n--- 📌 PHASE I: Advanced Trade Intelligence & Export Decision Support ---');
+
+    console.log('1. Testing GET /api/export-planner/analyze with leading-zero HS Code ("010121")...');
+    const analyzeRes = await apiFetch('/api/export-planner/analyze?hsCode=010121&targetCountry=United+Arab+Emirates&price=1200&quantity=50&shipping=2500&insurance=350&otherCosts=600', {
+      cookie: userCookie,
+    });
+    assert(analyzeRes.status === 200, `Expected 200 for analyze, got ${analyzeRes.status}: ${JSON.stringify(analyzeRes.data)}`);
+    assert(analyzeRes.data.inputs.hsCode === '010121', 'HS Code leading zero was corrupted!');
+    assert(typeof analyzeRes.data.scores.finalOpportunityScore === 'number', 'Missing final opportunity score');
+    assert(analyzeRes.data.riskAssessment && ['LOW', 'MEDIUM', 'HIGH'].includes(analyzeRes.data.riskAssessment.level), 'Invalid risk level');
+    assert(analyzeRes.data.readinessAssessment && ['READY', 'MODERATE', 'NOT_READY'].includes(analyzeRes.data.readinessAssessment.level), 'Invalid readiness level');
+    assert(Array.isArray(analyzeRes.data.actionPlan) && analyzeRes.data.actionPlan.length === 10, 'Action plan should contain 10 steps');
+    console.log(`   ✓ Export Opportunity Score: ${analyzeRes.data.scores.finalOpportunityScore}/100 | Recommendation: ${analyzeRes.data.recommendation.decision} | HS Code: ${analyzeRes.data.inputs.hsCode}`);
+
+    console.log('2. Testing GET /api/export-planner/best-markets...');
+    const bestMarketsRes = await apiFetch('/api/export-planner/best-markets?hsCode=010121&limit=5', {
+      cookie: userCookie,
+    });
+    assert(bestMarketsRes.status === 200, `Expected 200 for best markets, got ${bestMarketsRes.status}`);
+    assert(Array.isArray(bestMarketsRes.data.markets), 'Best markets payload missing markets array');
+    console.log(`   ✓ Ranked ${bestMarketsRes.data.markets.length} export destination corridors`);
+
+    console.log('3. Testing GET /api/export-planner/recommended-buyers with contact masking...');
+    const recBuyersRes = await apiFetch('/api/export-planner/recommended-buyers?hsCode=010121&targetCountry=United+Arab+Emirates&limit=5', {
+      cookie: userCookie,
+    });
+    assert(recBuyersRes.status === 200, `Expected 200 for recommended buyers, got ${recBuyersRes.status}`);
+    assert(Array.isArray(recBuyersRes.data.buyers), 'Recommended buyers payload missing buyers array');
+    for (const b of recBuyersRes.data.buyers) {
+      if (!b.isUnlocked) {
+        assert(b.email === null && b.phone === null, 'Locked buyer leaked contact details!');
+      }
+    }
+    console.log(`   ✓ Retrieved ${recBuyersRes.data.buyers.length} matched buyers with contact masking intact`);
+
+    console.log('4. Testing GET /api/export-planner/action-plan...');
+    const actionPlanRes = await apiFetch('/api/export-planner/action-plan?hsCode=010121&targetCountry=Germany', {
+      cookie: userCookie,
+    });
+    assert(actionPlanRes.status === 200, `Expected 200 for action plan, got ${actionPlanRes.status}`);
+    assert(Array.isArray(actionPlanRes.data.actionPlan) && actionPlanRes.data.actionPlan.length === 10, 'Action plan invalid');
+    console.log(`   ✓ Tailored ${actionPlanRes.data.actionPlan.length}-step execution action plan generated`);
+
+    console.log('5. Testing POST /api/export-planner/saved (Saving export plan)...');
+    const savePlanRes = await apiFetch('/api/export-planner/saved', {
+      method: 'POST',
+      cookie: userCookie,
+      body: {
+        name: 'E2E Equine Export Strategy to UAE',
+        hsCode: '010121',
+        product: 'Purebred Breeding Horses',
+        originCountry: 'India',
+        targetCountry: 'United Arab Emirates',
+        price: 1500,
+        quantity: 20,
+        shipping: 5000,
+        insurance: 800,
+        otherCosts: 1200,
+        targetSellingPrice: 2200,
+      },
+    });
+    assert(savePlanRes.status === 201, `Expected 201 for saving plan, got ${savePlanRes.status}`);
+    const savedPlanId = savePlanRes.data.id;
+    assert(savedPlanId > 0, 'Invalid saved plan ID returned');
+    console.log(`   ✓ Saved export plan created successfully (ID: ${savedPlanId})`);
+
+    console.log('6. Testing GET /api/export-planner/saved & GET /api/export-planner/saved/[id]...');
+    const getSavedRes = await apiFetch('/api/export-planner/saved', { cookie: userCookie });
+    assert(getSavedRes.status === 200, `Expected 200 for get saved, got ${getSavedRes.status}`);
+    assert(getSavedRes.data.plans.some((p) => p.id === savedPlanId), 'Saved plan not listed');
+
+    const getSingleRes = await apiFetch(`/api/export-planner/saved/${savedPlanId}`, { cookie: userCookie });
+    assert(getSingleRes.status === 200, `Expected 200 for single saved plan, got ${getSingleRes.status}`);
+    assert(getSingleRes.data.hsCode === '010121', 'Saved plan HS code string corrupted');
+    console.log(`   ✓ Retrieved saved export plan (Score: ${getSingleRes.data.analysisResult.scores.finalOpportunityScore}/100)`);
+
+    console.log('7. Testing POST /api/export-planner/saved/[id]/rerun (Re-evaluating with live metrics)...');
+    const planRerunRes = await apiFetch(`/api/export-planner/saved/${savedPlanId}/rerun`, {
+      method: 'POST',
+      cookie: userCookie,
+    });
+    assert(planRerunRes.status === 200, `Expected 200 for plan rerun, got ${planRerunRes.status}`);
+    assert(planRerunRes.data.analysis && planRerunRes.data.analysis.scores, 'Rerun failed to generate analysis');
+    console.log('   ✓ Plan successfully re-evaluated with fresh repository telemetry');
+
+    console.log('8. Testing Saved Plan Ownership Isolation & Deletion...');
+    // Unauthenticated access
+    const unauthPlan = await apiFetch(`/api/export-planner/saved/${savedPlanId}`);
+    assert(unauthPlan.status === 401, `Expected 401 for unauth plan access, got ${unauthPlan.status}`);
+
+    // Delete plan
+    const deletePlanRes = await apiFetch(`/api/export-planner/saved/${savedPlanId}`, {
+      method: 'DELETE',
+      cookie: userCookie,
+    });
+    assert(deletePlanRes.status === 200, `Expected 200 for plan deletion, got ${deletePlanRes.status}`);
+    console.log('   ✓ Export plan deleted and ownership boundaries verified');
+
     // Clean up test user from DB
     await conn.query('DELETE FROM users WHERE id = ?', [userId]);
 

@@ -431,6 +431,144 @@ Admin subscription plan management (`FREE`, `GROWTH`, `CONNECT`, `CONQUER`).
 
 ---
 
+### H. Export Opportunity Planner (`/api/export-planner/*`)
+
+*Stage 3 Phase 3 — Advanced Trade Intelligence & Export Decision Support. All endpoints require authenticated session (`USER` or `ADMIN`).*
+
+> **HS Code Rule**: All `hsCode` parameters are treated as **strings**. Leading zeros (e.g. `"010121"`) are always preserved. Never pass an integer.
+
+#### `GET /api/export-planner/analyze`
+Runs the complete unified export opportunity analysis engine for a given commodity corridor.
+
+- **Access Level**: Authenticated (`USER`), rate-limited: `market-analysis` bucket
+- **Query Parameters**:
+  | Parameter | Type | Required | Description |
+  |---|---|---|---|
+  | `hsCode` | string | No | 6-digit WCO HS Sub-heading (leading zeros preserved) |
+  | `product` | string | No | Product description / commodity name |
+  | `originCountry` | string | No | Exporter's home country (default: `"India"`) |
+  | `targetCountry` | string | No | Destination import market |
+  | `price` | number | No | Unit FOB export price (USD) |
+  | `quantity` | number | No | Export volume (units) |
+  | `shipping` | number | No | Total ocean/air freight cost (USD) |
+  | `insurance` | number | No | Total cargo insurance cost (USD) |
+  | `otherCosts` | number | No | Port handling and other fees (USD) |
+  | `targetSellingPrice` | number | No | Optional benchmark destination price for margin calc |
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "inputs": { "hsCode": "010121", "product": "...", "price": 1200, "quantity": 50, "..." },
+    "scores": {
+      "finalOpportunityScore": 67,
+      "marketOpportunityScore": 72,
+      "buyerDemandScore": 80,
+      "tradeRiskScore": 35,
+      "exportReadinessScore": 74
+    },
+    "riskAssessment": { "score": 35, "level": "LOW", "factors": [], "recommendations": [] },
+    "landedCost": { "available": true, "totalLandedCost": 75450, "costPerUnit": 1509, "marginPercentage": 2.7 },
+    "readinessAssessment": { "score": 74, "level": "MODERATE", "blockers": [], "recommendations": [] },
+    "recommendation": { "decision": "ENTER_WITH_CAUTION", "reasons": [], "advantages": [], "risks": [], "requiredActions": [] },
+    "recommendedBuyers": [...],
+    "actionPlan": [ { "step": 1, "title": "...", "description": "...", "status": "COMPLETED" }, ... ],
+    "marketMetrics": { "buyerCount": 3, "verifiedBuyerCount": 2, "shipmentCount": 8 },
+    "analyzedAt": "2026-09-03T16:00:00Z"
+  }
+  ```
+- Also supports `POST` with same parameters in JSON request body.
+
+---
+
+#### `GET /api/export-planner/best-markets`
+Evaluates and ranks the best export destination countries for a given HS code by composite opportunity score.
+
+- **Access Level**: Authenticated (`USER`)
+- **Query Parameters**: `hsCode`, `product`, `originCountry`, `limit` (max 10)
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "markets": [
+      { "country": "Germany", "finalOpportunityScore": 72, "marketScore": 68, "risk": { "level": "LOW", "score": 28 } },
+      ...
+    ]
+  }
+  ```
+
+---
+
+#### `GET /api/export-planner/recommended-buyers`
+Returns buyers ranked by contextual match score against HS code and target country. **Contact details are masked unless the authenticated user has unlocked them.**
+
+- **Access Level**: Authenticated (`USER`)
+- **Query Parameters**: `hsCode`, `targetCountry`, `product`, `limit` (max 20)
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "buyers": [
+      {
+        "id": 3,
+        "companyName": "Gulf Livestock FZCO",
+        "country": "United Arab Emirates",
+        "matchScore": 85,
+        "leadScore": 78,
+        "isUnlocked": false,
+        "email": null,
+        "phone": null
+      }
+    ]
+  }
+  ```
+
+---
+
+#### `GET /api/export-planner/action-plan`
+Returns a tailored 10-step adaptive export execution roadmap.
+
+- **Access Level**: Authenticated (`USER`)
+- **Query Parameters**: `hsCode`, `product`, `originCountry`, `targetCountry`, `price`, `quantity`, `shipping`, `insurance`, `otherCosts`
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "actionPlan": [
+      { "step": 1, "title": "Validate Commodity HS Code", "description": "...", "status": "COMPLETED", "link": "/hs-codes" },
+      ...
+    ]
+  }
+  ```
+
+---
+
+#### `GET /api/export-planner/saved`
+Lists all export plans saved by the authenticated user.
+
+- **Access Level**: Authenticated (`USER`)
+- **Success Response (`200 OK`)**: `{ "plans": [...], "total": 3 }`
+
+#### `POST /api/export-planner/saved`
+Saves a new export plan. If `analysisResult` is omitted, the engine re-runs analysis automatically.
+
+- **Access Level**: Authenticated (`USER`)
+- **Request Body**: `{ "name", "hsCode", "product", "originCountry", "targetCountry", "price", "quantity", "shipping", "insurance", "otherCosts", "targetSellingPrice", "analysisResult?" }`
+- **Success Response (`201 Created`)**: `{ "id": 7, "message": "Export plan saved successfully" }`
+
+---
+
+#### `GET /api/export-planner/saved/[id]`
+Retrieves a single saved export plan. Returns `404` if plan does not belong to the authenticated user.
+
+#### `DELETE /api/export-planner/saved/[id]`
+Permanently deletes a saved export plan owned by the authenticated user.
+
+---
+
+#### `POST /api/export-planner/saved/[id]/rerun`
+Re-runs the full export decision engine analysis using the original saved `input_data` and updates `analysis_result` with fresh live repository metrics.
+
+- **Access Level**: Authenticated (`USER`)
+- **Success Response (`200 OK`)**: `{ "success": true, "analysis": { ... } }`
+
+---
+
 ## 6. Subscription Matrix & Quota Enforcement
 
 | Plan Tier | Contact Unlocks Quota | Features Included |

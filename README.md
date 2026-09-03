@@ -72,9 +72,14 @@ All 8 phases of user, directory, market intelligence, portfolio, unlock, admin, 
 | `/trade-data` | Authenticated | Live EXIM directory searching for Buyers, Suppliers & Shipments. |
 | `/market-analysis` | Authenticated | Advanced Market Intelligence workbench, Opportunity Scoring & Country Comparison. |
 | `/hs-codes` | Authenticated | 99 HS Chapter directory, 6/8 digit search & customs duty calculator. |
+| `/buyer-discovery` | Authenticated | Buyer discovery with lead scoring, contact masking & CRM save. |
+| `/supplier-discovery` | Authenticated | Supplier search with verified entity verification & save-to-leads. |
+| `/my-leads` | Authenticated | Full CRM pipeline with 6 statuses, notes, export CSV & recommended leads. |
+| `/export-planner` | Authenticated | **Stage 3 Phase 3** — Export opportunity analysis, tariff economics, risk scoring, buyer matching & adaptive action plan. |
+| `/export-planner/report` | Authenticated | Printable/PDF-ready trade intelligence dossier for a saved export plan. |
 | `/search-history` | Authenticated | Log of recent search queries and saved query management. |
 | `/profile` | Authenticated | User account details, company info, and subscription status. |
-| `/dashboard` | Authenticated | Unified dashboard with market opportunity cards and recent saved analyses. |
+| `/dashboard` | Authenticated | Unified dashboard with market opportunity cards, Export Intelligence widget, and recent saved analyses. |
 | `/contact` | Public | Contact form submissions. |
 | `/book-a-demo` | Public | One-on-one demo booking. |
 | `/admin` | Admin Only | Administrative overview with full metric dashboard. |
@@ -83,6 +88,7 @@ All 8 phases of user, directory, market intelligence, portfolio, unlock, admin, 
 | `/admin/suppliers` | Admin Only | Verified suppliers directory CRUD. |
 | `/admin/shipments` | Admin Only | Shipment records CRUD — search, filter, paginate, sort. |
 | `/admin/hs-codes` | Admin Only | HS Code database CRUD — duplicate-code protection, chapter filter. |
+| `/admin/leads` | Admin Only | Admin-level CRM: all user leads, pipeline review and management. |
 | `/admin/requests` | Admin Only | Manage inbound contact and demo request lead statuses. |
 
 ---
@@ -125,6 +131,43 @@ Generates a deterministic 0–100 score normalized across 4 pillars:
 
 ---
 
+## Stage 3 Phase 3 — Advanced Trade Intelligence & Export Decision Support
+
+The Export Planner acts as a **"control tower"** that connects Market Intelligence, Buyer Discovery, Tariff Duty, and the CRM pipeline into one unified export decision workflow. All calculations are **strictly deterministic** — no `Math.random()`, no fabricated figures.
+
+### Key Features
+- **Export Opportunity Score (0–100)**: Weighted composite index (market 30%, readiness 25%, corridor safety 20%, buyer demand 15%, cost efficiency 10%)
+- **Tariff & Landed Cost Economics** (`lib/landedCost.js`): Integrates BCD/SWS/IGST from `hs_codes` table. Returns `{ available: false }` gracefully if HS code is not in database — never invents rates
+- **Trade Risk Analysis** (`lib/tradeRisk.js`): Deterministic LOW/MEDIUM/HIGH risk bucket based on buyer concentration, shipment history, and supplier saturation
+- **Export Readiness Assessment** (`lib/exportReadiness.js`): 8-dimension structural evaluation covering HS classification, buyer availability, demand, trade activity, data confidence, risk mitigation, and cost efficiency
+- **Strategic Market Entry Recommendation** (`lib/marketEntryRecommendation.js`): 4-decision verdict — `ENTER_NOW | ENTER_WITH_CAUTION | RESEARCH_MORE | AVOID`
+- **Buyer-to-Market Matching** (`lib/buyerMarketMatching.js`): Scores buyers by HS/country/verification overlap. **Contact masking is preserved** — locked contacts return `null` for email and phone
+- **Adaptive 10-Step Action Plan** (`lib/exportActionPlan.js`): Dynamically adapts steps to risk level, readiness, and buyer pipeline status
+- **Persistent Export Plans** (`saved_export_plans` table): Save, retrieve, delete, and re-run plans with ownership isolation
+
+### Data Transparency
+> All scores are computed from verified customs manifest records and entity data stored in the GlobeBridge database. No external live APIs are used. If trade data is sparse, scores reflect lower confidence rather than fabricated values.
+
+### New API Endpoints (Stage 3 Phase 3)
+- `GET/POST /api/export-planner/analyze` — Full unified export analysis engine
+- `GET /api/export-planner/best-markets` — Ranked destination market discovery
+- `GET /api/export-planner/recommended-buyers` — Buyer matching with contact masking
+- `GET /api/export-planner/action-plan` — Adaptive 10-step execution roadmap
+- `GET /api/export-planner/saved` — List saved plans
+- `POST /api/export-planner/saved` — Save export plan
+- `GET /api/export-planner/saved/[id]` — Retrieve single plan
+- `DELETE /api/export-planner/saved/[id]` — Delete saved plan
+- `POST /api/export-planner/saved/[id]/rerun` — Re-evaluate with live metrics
+
+### Integration Points
+- **Market Analysis → Export Planner**: "📋 Create Export Plan" button in Market Analysis overview and each Best Markets card
+- **Buyer Discovery → Export Planner**: "📊 Analyze Plan" link in BuyerCard footer
+- **My Leads → Recommended Leads**: Phase 3 injects recommended buyers from `buyerMarketMatching.js` into the My Leads pipeline
+- **Dashboard**: Compact Export Intelligence widget showing corridor score, readiness status, risk level, and active lead count
+- **Nav**: "Export Planner" navigation link added after "My Leads" for all users
+
+---
+
 ## API Reference
 
 > 📄 **Full API Documentation**: See [`docs/API_DOCUMENTATION.md`](./docs/API_DOCUMENTATION.md) for complete endpoint specs, request/response schemas, error codes, rate limiting details, and sample cURL requests.
@@ -145,6 +188,24 @@ Generates a deterministic 0–100 score normalized across 4 pillars:
 - `POST /api/market-analysis/saved` - Bookmark market analysis with filters and score
 - `DELETE /api/market-analysis/saved/[id]` - Remove saved analysis (enforces user ownership)
 - `POST /api/market-analysis/saved/[id]/rerun` - Re-evaluate analysis with fresh database data
+
+### Export Opportunity Planner APIs (Protected: `requireUser()`)
+- `GET/POST /api/export-planner/analyze` — Full unified analysis (market, risk, tariff, readiness, buyers, action plan)
+- `GET /api/export-planner/best-markets` — Ranked destination corridors by composite opportunity score
+- `GET /api/export-planner/recommended-buyers` — Buyer matching with HS/country scoring and contact masking
+- `GET /api/export-planner/action-plan` — Adaptive 10-step execution roadmap
+- `GET /api/export-planner/saved` — List saved export plans
+- `POST /api/export-planner/saved` — Save export plan with auto-run analysis
+- `GET /api/export-planner/saved/[id]` — Single plan retrieval (ownership enforced)
+- `DELETE /api/export-planner/saved/[id]` — Delete saved plan
+- `POST /api/export-planner/saved/[id]/rerun` — Re-run analysis with latest DB metrics
+
+### CRM Pipeline APIs (Protected: `requireUser()`)
+- `GET /api/leads` — List own leads with metrics (NEW/CONTACTED/QUALIFIED/NEGOTIATING/WON/LOST)
+- `POST /api/leads` — Save buyer/supplier as lead (duplicate protection: 409)
+- `GET/PUT/DELETE /api/leads/[id]` — Read, update status/notes, or delete lead
+- `GET /api/leads/export` — Export CRM pipeline as CSV download
+- `GET/PUT/DELETE /api/admin/leads` — Admin-level CRM management
 
 ### Trade Data & Directory APIs
 - `GET /api/buyers?product=&country=&hsCode=&hsChapter=&q=&page=&limit=&sort=` - Paginated buyer search

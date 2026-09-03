@@ -625,6 +625,12 @@ export default function MarketAnalysisPage() {
 
                 <div className="flex flex-wrap gap-3">
                   <Link
+                    href={`/export-planner?hsCode=${encodeURIComponent(hsCode || "")}&targetCountry=${encodeURIComponent(country || "")}`}
+                    className="rounded-lg border border-[var(--brass)] bg-[var(--brass)] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[var(--ink)] hover:brightness-110 shadow transition"
+                  >
+                    📋 Create Export Plan
+                  </Link>
+                  <Link
                     href={`/buyer-discovery?hsCode=${encodeURIComponent(hsCode || "")}&country=${encodeURIComponent(country || "")}`}
                     className="rounded-lg border border-emerald-500/40 bg-emerald-950/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-emerald-400 hover:bg-emerald-950 transition"
                   >
@@ -1085,6 +1091,12 @@ export default function MarketAnalysisPage() {
                         >
                           Deep-Dive Corridor →
                         </button>
+                        <Link
+                          href={`/export-planner?hsCode=${encodeURIComponent(hsCode || "")}&targetCountry=${encodeURIComponent(bm.country)}`}
+                          className="w-full block rounded bg-[var(--brass)] py-2 text-center text-xs font-bold uppercase text-[var(--ink)] hover:brightness-110 shadow transition"
+                        >
+                          📋 Create Export Plan
+                        </Link>
                         <div className="grid grid-cols-2 gap-2">
                           <Link
                             href={`/buyer-discovery?hsCode=${encodeURIComponent(hsCode || "")}&country=${encodeURIComponent(bm.country)}`}

@@ -8,19 +8,29 @@ import { useAuth } from "../context/AuthContext";
 // Public navigation links when user is NOT logged in
 const publicNavLinks = [
   { href: "/", label: "Home" },
-  { href: "/features", label: "Features" },
-  { href: "/plans-pricing", label: "Pricing" },
-  { href: "/about-us", label: "About Us" },
-  { href: "/contact", label: "Contact" },
-];
-
-// App navigation links when user IS logged in
-const appNavLinks = [
-  { href: "/dashboard", label: "App Dashboard", highlight: true },
   { href: "/trade-data", label: "Trade Data" },
   { href: "/export-potential-test", label: "Export Test", badge: "Free" },
   { href: "/hs-codes", label: "HS Codes" },
   { href: "/market-analysis", label: "Market Trends" },
+  { href: "/supplier-discovery", label: "Suppliers" },
+  { href: "/buyer-discovery", label: "Buyers" },
+  { href: "/my-leads", label: "My Leads" },
+  { href: "/export-planner", label: "Export Planner", badge: "New" },
+  { href: "/features", label: "Features" },
+  { href: "/plans-pricing", label: "Pricing" },
+];
+
+// App navigation links when user IS logged in
+const appNavLinks = [
+  { href: "/dashboard", label: "Dashboard", highlight: true },
+  { href: "/trade-data", label: "Trade Data" },
+  { href: "/export-potential-test", label: "Export Test", badge: "Free" },
+  { href: "/hs-codes", label: "HS Codes" },
+  { href: "/market-analysis", label: "Market Trends" },
+  { href: "/supplier-discovery", label: "Suppliers" },
+  { href: "/buyer-discovery", label: "Buyers" },
+  { href: "/my-leads", label: "My Leads" },
+  { href: "/export-planner", label: "Export Planner", badge: "New" },
   { href: "/features", label: "Features" },
   { href: "/plans-pricing", label: "Pricing" },
 ];
@@ -30,34 +40,38 @@ export default function Nav() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const activeLinks = user ? appNavLinks : publicNavLinks;
+  const activeLinks = user
+    ? (user.role === "admin"
+        ? [...appNavLinks, { href: "/admin/leads", label: "Admin Leads", badge: "Admin" }]
+        : appNavLinks)
+    : publicNavLinks;
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brass)]/25 bg-[var(--ink)]/95 backdrop-blur shadow-lg">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-[96rem] items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
         <Link 
           href={user ? "/dashboard" : "/"} 
-          className="flex items-center gap-2 font-display text-2xl tracking-tight text-[var(--paper)]"
+          className="flex items-center gap-2 font-display text-xl tracking-tight text-[var(--paper)] shrink-0 mr-4"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded bg-[var(--brass)] font-mono text-sm font-bold text-[var(--ink)]">
+          <span className="flex h-7 w-7 items-center justify-center rounded bg-[var(--brass)] font-mono text-xs font-bold text-[var(--ink)]">
             GB
           </span>
-          <span>
+          <span className="hidden sm:inline">
             GLOBE<span className="text-[var(--brass)]">BRIDGE</span>
           </span>
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden items-center gap-4 xl:gap-5 lg:flex">
+        <nav className="hidden items-center gap-2.5 xl:gap-3.5 2xl:gap-4.5 lg:flex overflow-x-auto py-1">
           {activeLinks.map((l) => {
             const isActive = pathname === l.href;
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`relative font-mono text-[11px] uppercase tracking-[0.12em] transition ${
+                className={`relative whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.08em] px-1.5 py-1 transition shrink-0 ${
                   isActive
                     ? "font-bold text-[var(--brass)] underline underline-offset-8"
                     : l.highlight
@@ -77,7 +91,7 @@ export default function Nav() {
         </nav>
 
         {/* Desktop Right CTAs: Active User vs Visitor */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2.5 md:flex shrink-0 ml-4">
           {user ? (
             <div className="flex items-center gap-3">
               {/* User Profile Pill */}

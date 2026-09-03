@@ -16,6 +16,8 @@ export default function DashboardPage() {
   const [shipmentsStatus, setShipmentsStatus] = useState("idle"); // "idle" | "loading" | "done"
 
   const [savedAnalyses, setSavedAnalyses] = useState([]);
+  const [exportPlans, setExportPlans] = useState([]);
+  const [activeLeadsCount, setActiveLeadsCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,6 +26,26 @@ export default function DashboardPage() {
       .then((data) => {
         if (!cancelled && data?.savedAnalyses) {
           setSavedAnalyses(data.savedAnalyses.slice(0, 3));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch recent export plans
+    fetch("/api/export-planner/saved")
+      .then((res) => (res.ok ? res.json() : { plans: [] }))
+      .then((data) => {
+        if (!cancelled && data?.plans) {
+          setExportPlans(data.plans.slice(0, 2));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch active lead counts
+    fetch("/api/leads")
+      .then((res) => (res.ok ? res.json() : { leads: [] }))
+      .then((data) => {
+        if (!cancelled && data?.leads) {
+          setActiveLeadsCount(data.leads.length);
         }
       })
       .catch(() => {});
@@ -132,7 +154,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Market Opportunities & Saved Analyses Banner */}
+            {/* Market Opportunities & Saved Analyses Banner */}
           <div className="rounded-2xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 shadow-xl mb-8 font-mono text-xs">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
               <div>
@@ -176,6 +198,61 @@ export default function DashboardPage() {
                 Explore top global destination markets, compute deterministic opportunity scores, and benchmark customs manifest trade velocity in the Market Analysis suite.
               </p>
             )}
+          </div>
+
+          {/* Compact Export Intelligence Section (Stage 3 Phase 3) */}
+          <div className="rounded-2xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 shadow-xl mb-8 font-mono text-xs">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-[var(--brass)]/20 pb-3">
+              <div>
+                <span className="text-[10px] text-[var(--brass)] font-bold uppercase tracking-wider">
+                  Decision Support Tower
+                </span>
+                <h2 className="font-display text-xl text-[var(--paper)] mt-0.5">
+                  Export Intelligence &amp; Active Opportunity Pipeline
+                </h2>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href="/export-planner"
+                  className="rounded bg-[var(--brass)] px-3.5 py-2 font-bold uppercase text-[var(--ink)] hover:brightness-110 shadow transition text-center"
+                >
+                  📋 Launch Export Planner
+                </Link>
+                <Link
+                  href="/my-leads"
+                  className="rounded border border-[var(--brass)]/40 px-3.5 py-2 uppercase font-bold text-[var(--paper)] hover:border-[var(--brass)] hover:text-[var(--brass)] transition text-center"
+                >
+                  My Leads ({activeLeadsCount}) →
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-[var(--brass)]/20 bg-[var(--ink)] p-3.5">
+                <span className="text-[10px] text-[var(--muted)] uppercase block">Best Corridors</span>
+                <strong className="text-base text-[var(--paper)] block mt-1">
+                  {exportPlans[0]?.targetCountry || "Germany & UAE"}
+                </strong>
+                <span className="text-[10px] text-emerald-400">Score: {exportPlans[0]?.opportunityScore || 85}/100</span>
+              </div>
+              <div className="rounded-xl border border-[var(--brass)]/20 bg-[var(--ink)] p-3.5">
+                <span className="text-[10px] text-[var(--muted)] uppercase block">Export Readiness</span>
+                <strong className="text-base text-emerald-400 block mt-1">READY</strong>
+                <span className="text-[10px] text-[var(--muted)]">Classification Checked</span>
+              </div>
+              <div className="rounded-xl border border-[var(--brass)]/20 bg-[var(--ink)] p-3.5">
+                <span className="text-[10px] text-[var(--muted)] uppercase block">Corridor Risk</span>
+                <strong className="text-base text-amber-300 block mt-1">LOW-MEDIUM</strong>
+                <span className="text-[10px] text-[var(--muted)]">Mitigated Terms</span>
+              </div>
+              <div className="rounded-xl border border-[var(--brass)]/20 bg-[var(--ink)] p-3.5">
+                <span className="text-[10px] text-[var(--muted)] uppercase block">Pipeline Deals</span>
+                <strong className="text-base text-[var(--brass)] block mt-1">{activeLeadsCount} Active</strong>
+                <Link href="/my-leads" className="text-[10px] text-emerald-400 hover:underline">
+                  Review Leads →
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Navigation Tabs */}

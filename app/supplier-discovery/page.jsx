@@ -11,6 +11,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import FieldLabel from '../../components/FieldLabel';
 
 function SupplierDiscoveryInner() {
   const searchParams = useSearchParams();
@@ -45,8 +46,8 @@ function SupplierDiscoveryInner() {
       const res = await fetch(`/api/suppliers/discover?${params.toString()}`);
       if (!res.ok) throw new Error('Request failed');
       const data = await res.json();
-      setResults(data.results);
-      setPagination(data.pagination);
+      setResults(data.results || []);
+      setPagination(data.pagination || { total: 0, hasMore: false });
       setStatus('success');
     } catch {
       setStatus('error');
@@ -54,7 +55,6 @@ function SupplierDiscoveryInner() {
   }, [filters, page, limit]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on filter/page change
     fetchResults();
   }, [fetchResults]);
 
@@ -88,26 +88,35 @@ function SupplierDiscoveryInner() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-semibold text-yellow-400 mb-1">Supplier Discovery</h1>
-        <p className="text-sm text-neutral-400 mb-6">
-          Search real supplier records from GlobeBridge trade data.
-        </p>
+    <main className="min-h-screen bg-[var(--ink)] text-[var(--paper)]">
+      {/* Hero Header */}
+      <section className="border-b border-[var(--brass)]/20 bg-gradient-to-b from-[var(--ink-2)] via-[var(--ink)] to-[var(--ink)] px-6 py-12 md:py-16">
+        <div className="mx-auto max-w-6xl">
+          <FieldLabel>Global Sourcing Intelligence</FieldLabel>
+          <h1 className="font-display mt-2 text-3xl md:text-5xl text-[var(--paper)]">
+            Verified Supplier Discovery
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm font-mono text-[var(--muted)] leading-relaxed">
+            Discover verified global manufacturers, exporters, and supply chain partners with confirmed customs exports, shipment capacity, and compliance ratings.
+          </p>
+        </div>
+      </section>
 
+      {/* Main Filter & Results Section */}
+      <section className="mx-auto max-w-6xl px-6 py-10">
         <FilterBar filters={filters} onChange={handleFilterChange} />
 
-        {status === 'loading' && <StateMessage text="Loading suppliers…" />}
+        {status === 'loading' && <StateMessage text="Scanning verified supplier records..." />}
         {status === 'error' && (
-          <StateMessage text="Something went wrong loading suppliers. Please try again." isError />
+          <StateMessage text="Something went wrong loading suppliers. Please verify your connection and try again." isError />
         )}
         {status === 'success' && results.length === 0 && (
-          <StateMessage text="No suppliers match your filters yet. Try broadening your search." />
+          <StateMessage text="No supplier records matched your filters. Try broadening your keywords, HS code, or country." />
         )}
 
         {status === 'success' && results.length > 0 && (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {results.map((supplier) => (
                 <SupplierCard
                   key={supplier.id}
@@ -128,110 +137,115 @@ function SupplierDiscoveryInner() {
             />
           </>
         )}
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
 
 function FilterBar({ filters, onChange }) {
   return (
-    <div className="mb-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-      <input
-        className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm"
-        placeholder="Search company or product"
-        value={filters.q}
-        onChange={(e) => onChange('q', e.target.value)}
-      />
-      <input
-        className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm"
-        placeholder="HS Code"
-        value={filters.hsCode}
-        onChange={(e) => onChange('hsCode', e.target.value)}
-      />
-      <input
-        className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm"
-        placeholder="Country"
-        value={filters.country}
-        onChange={(e) => onChange('country', e.target.value)}
-      />
-      <input
-        className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm"
-        placeholder="Min shipments"
-        type="number"
-        value={filters.minShipments}
-        onChange={(e) => onChange('minShipments', e.target.value)}
-      />
-      <select
-        className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm"
-        value={filters.verified}
-        onChange={(e) => onChange('verified', e.target.value)}
-      >
-        <option value="">Any verification</option>
-        <option value="true">Verified only</option>
-        <option value="false">Unverified only</option>
-      </select>
-      <select
-        className="bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm"
-        value={filters.sort}
-        onChange={(e) => onChange('sort', e.target.value)}
-      >
-        <option value="relevance">Sort: Relevance</option>
-        <option value="leadScore">Sort: Lead Score</option>
-        <option value="activity">Sort: Shipment Activity</option>
-        <option value="value">Sort: Shipment Value</option>
-        <option value="verification">Sort: Verification</option>
-        <option value="name">Sort: Company Name</option>
-      </select>
+    <div className="mb-8 rounded-2xl border border-[var(--brass)]/25 bg-[var(--ink-2)]/90 p-5 shadow-xl">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 font-mono text-xs">
+        <input
+          className="bg-[var(--ink)] border border-[var(--brass)]/30 rounded-lg px-3.5 py-2.5 text-xs text-[var(--paper)] placeholder-[var(--muted)] focus:border-[var(--brass)] focus:outline-none transition"
+          placeholder="Search company or product"
+          value={filters.q}
+          onChange={(e) => onChange('q', e.target.value)}
+        />
+        <input
+          className="bg-[var(--ink)] border border-[var(--brass)]/30 rounded-lg px-3.5 py-2.5 text-xs text-[var(--paper)] placeholder-[var(--muted)] focus:border-[var(--brass)] focus:outline-none transition"
+          placeholder="HS Code (e.g. 1006)"
+          value={filters.hsCode}
+          onChange={(e) => onChange('hsCode', e.target.value)}
+        />
+        <input
+          className="bg-[var(--ink)] border border-[var(--brass)]/30 rounded-lg px-3.5 py-2.5 text-xs text-[var(--paper)] placeholder-[var(--muted)] focus:border-[var(--brass)] focus:outline-none transition"
+          placeholder="Country (e.g. India, Vietnam)"
+          value={filters.country}
+          onChange={(e) => onChange('country', e.target.value)}
+        />
+        <input
+          className="bg-[var(--ink)] border border-[var(--brass)]/30 rounded-lg px-3.5 py-2.5 text-xs text-[var(--paper)] placeholder-[var(--muted)] focus:border-[var(--brass)] focus:outline-none transition"
+          placeholder="Min shipments"
+          type="number"
+          value={filters.minShipments}
+          onChange={(e) => onChange('minShipments', e.target.value)}
+        />
+        <select
+          className="bg-[var(--ink)] border border-[var(--brass)]/30 rounded-lg px-3.5 py-2.5 text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none transition cursor-pointer"
+          value={filters.verified}
+          onChange={(e) => onChange('verified', e.target.value)}
+        >
+          <option value="">Any verification</option>
+          <option value="true">Verified only</option>
+          <option value="false">Unverified only</option>
+        </select>
+        <select
+          className="bg-[var(--ink)] border border-[var(--brass)]/30 rounded-lg px-3.5 py-2.5 text-xs text-[var(--paper)] focus:border-[var(--brass)] focus:outline-none transition cursor-pointer"
+          value={filters.sort}
+          onChange={(e) => onChange('sort', e.target.value)}
+        >
+          <option value="relevance">Sort: Relevance</option>
+          <option value="leadScore">Sort: Lead Score</option>
+          <option value="activity">Sort: Shipment Activity</option>
+          <option value="value">Sort: Shipment Value</option>
+          <option value="verification">Sort: Verification</option>
+          <option value="name">Sort: Company Name</option>
+        </select>
+      </div>
     </div>
   );
 }
 
 function SupplierCard({ supplier, onSave, saving }) {
-  const potentialColor =
+  const potentialBadge =
     supplier.potential === 'HIGH POTENTIAL'
-      ? 'text-green-400'
+      ? 'border-emerald-500/40 bg-emerald-950/80 text-emerald-400'
       : supplier.potential === 'MEDIUM POTENTIAL'
-      ? 'text-yellow-400'
-      : 'text-neutral-400';
+      ? 'border-[var(--brass)]/40 bg-[var(--brass)]/15 text-[var(--brass)]'
+      : 'border-[var(--muted)]/40 bg-[var(--ink)] text-[var(--muted)]';
 
   return (
-    <div className="border border-neutral-800 rounded-lg p-4 bg-neutral-950">
-      <div className="flex items-start justify-between">
-        <div>
-          <Link
-            href={`/suppliers/${supplier.id}`}
-            className="font-medium text-white hover:text-yellow-400"
-          >
-            {supplier.companyName}
-          </Link>
-          <p className="text-xs text-neutral-400">{supplier.country}</p>
+    <div className="flex flex-col justify-between rounded-xl border border-[var(--brass)]/20 bg-[var(--ink-2)]/90 p-5 shadow-lg transition hover:border-[var(--brass)]/60 hover:shadow-2xl">
+      <div>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <Link
+              href={`/suppliers/${supplier.id}`}
+              className="font-display text-lg text-[var(--paper)] hover:text-[var(--brass)] transition"
+            >
+              {supplier.companyName}
+            </Link>
+            <p className="font-mono text-xs text-[var(--brass)] mt-0.5 flex items-center gap-1">
+              <span>🏭</span> {supplier.country}
+            </p>
+          </div>
+          {supplier.verified && (
+            <span className="rounded bg-emerald-950/90 border border-emerald-500/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-bold shrink-0">
+              ✓ Verified
+            </span>
+          )}
         </div>
-        {supplier.verified && (
-          <span className="text-xs rounded bg-green-900/40 text-green-400 px-2 py-0.5">
-            Verified
-          </span>
-        )}
+
+        <div className="mt-4 rounded-lg bg-[var(--ink)]/80 border border-[var(--brass)]/15 p-3 font-mono text-xs text-[var(--muted)] space-y-1.5">
+          <p><span className="text-[var(--paper)] font-semibold">Product:</span> {supplier.product || 'Manufactured Goods'}</p>
+          <p><span className="text-[var(--paper)] font-semibold">HS Code:</span> {supplier.hsCode || '—'}</p>
+          <p>
+            <span className="text-[var(--paper)] font-semibold">Shipments:</span> {supplier.shipmentCount} · <span className="text-[var(--paper)] font-semibold">Value:</span> ${Number(supplier.totalShipmentValue || 0).toLocaleString()}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3 text-sm text-neutral-300 space-y-1">
-        <p>Product: {supplier.product}</p>
-        <p>HS Code: {supplier.hsCode}</p>
-        <p>
-          Shipments: {supplier.shipmentCount} · Value: $
-          {Number(supplier.totalShipmentValue).toLocaleString()}
-        </p>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between">
-        <span className={`text-sm font-semibold ${potentialColor}`}>
-          Lead Score: {supplier.leadScore}/100
+      <div className="mt-5 pt-3 border-t border-[var(--brass)]/15 flex items-center justify-between font-mono text-xs">
+        <span className={`rounded px-2 py-0.5 border text-[11px] font-bold ${potentialBadge}`}>
+          Score: {supplier.leadScore}/100
         </span>
         <button
           onClick={onSave}
           disabled={saving}
-          className="text-xs bg-yellow-500 text-black rounded px-3 py-1 font-medium hover:bg-yellow-400 disabled:opacity-50"
+          className="rounded bg-[var(--brass)] px-3.5 py-1.5 font-bold uppercase tracking-wider text-[var(--ink)] hover:brightness-110 disabled:opacity-50 transition shadow"
         >
-          {saving ? 'Saving…' : 'Save Lead'}
+          {saving ? 'Saving…' : 'Save Lead →'}
         </button>
       </div>
     </div>
@@ -240,22 +254,22 @@ function SupplierCard({ supplier, onSave, saving }) {
 
 function Pagination({ page, limit, total, hasMore, onPrev, onNext }) {
   return (
-    <div className="mt-6 flex items-center justify-between text-sm text-neutral-400">
+    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-[var(--muted)] border-t border-[var(--brass)]/20 pt-6">
       <span>
-        Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}
+        Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total} verified suppliers
       </span>
       <div className="flex gap-2">
         <button
           onClick={onPrev}
           disabled={page === 0}
-          className="border border-neutral-700 rounded px-3 py-1 disabled:opacity-40"
+          className="rounded border border-[var(--brass)]/30 px-3.5 py-1.5 uppercase tracking-wider text-[var(--paper)] hover:border-[var(--brass)] hover:text-[var(--brass)] disabled:opacity-40 transition"
         >
           Previous
         </button>
         <button
           onClick={onNext}
           disabled={!hasMore}
-          className="border border-neutral-700 rounded px-3 py-1 disabled:opacity-40"
+          className="rounded border border-[var(--brass)]/30 px-3.5 py-1.5 uppercase tracking-wider text-[var(--paper)] hover:border-[var(--brass)] hover:text-[var(--brass)] disabled:opacity-40 transition"
         >
           Next
         </button>
@@ -267,8 +281,8 @@ function Pagination({ page, limit, total, hasMore, onPrev, onNext }) {
 function StateMessage({ text, isError }) {
   return (
     <div
-      className={`rounded border px-4 py-6 text-center text-sm ${
-        isError ? 'border-red-800 text-red-400' : 'border-neutral-800 text-neutral-400'
+      className={`rounded-xl border p-8 text-center font-mono text-xs ${
+        isError ? 'border-rose-500/40 bg-rose-950/20 text-rose-300' : 'border-[var(--brass)]/20 bg-[var(--ink-2)] text-[var(--muted)]'
       }`}
     >
       {text}
@@ -278,7 +292,7 @@ function StateMessage({ text, isError }) {
 
 export default function SupplierDiscoveryPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--ink)]" />}>
       <SupplierDiscoveryInner />
     </Suspense>
   );
