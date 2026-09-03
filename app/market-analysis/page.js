@@ -623,6 +623,21 @@ export default function MarketAnalysisPage() {
                   </span>
                 </div>
 
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href={`/buyer-discovery?hsCode=${encodeURIComponent(hsCode || "")}&country=${encodeURIComponent(country || "")}`}
+                    className="rounded-lg border border-emerald-500/40 bg-emerald-950/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-emerald-400 hover:bg-emerald-950 transition"
+                  >
+                    🌍 Discover Buyers for this Corridor
+                  </Link>
+                  <Link
+                    href={`/supplier-discovery?hsCode=${encodeURIComponent(hsCode || "")}&country=${encodeURIComponent(country || "")}`}
+                    className="rounded-lg border border-sky-500/40 bg-sky-950/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-sky-400 hover:bg-sky-950 transition"
+                  >
+                    🚢 Find Suppliers for this Corridor
+                  </Link>
+                </div>
+
                 {analysis?.trend?.hasData ? (
                   <div className="space-y-4 font-mono text-xs">
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -1058,7 +1073,7 @@ export default function MarketAnalysisPage() {
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-[var(--brass)]/15">
+                      <div className="mt-4 pt-3 border-t border-[var(--brass)]/15 space-y-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -1070,6 +1085,20 @@ export default function MarketAnalysisPage() {
                         >
                           Deep-Dive Corridor →
                         </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Link
+                            href={`/buyer-discovery?hsCode=${encodeURIComponent(hsCode || "")}&country=${encodeURIComponent(bm.country)}`}
+                            className="rounded border border-emerald-500/30 py-2 text-center text-[10px] font-bold uppercase text-emerald-400 hover:bg-emerald-950/60 transition"
+                          >
+                            🌍 Discover Buyers
+                          </Link>
+                          <Link
+                            href={`/supplier-discovery?hsCode=${encodeURIComponent(hsCode || "")}&country=${encodeURIComponent(bm.country)}`}
+                            className="rounded border border-sky-500/30 py-2 text-center text-[10px] font-bold uppercase text-sky-400 hover:bg-sky-950/60 transition"
+                          >
+                            🚢 Find Suppliers
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   ))}

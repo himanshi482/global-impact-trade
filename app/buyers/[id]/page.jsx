@@ -33,6 +33,7 @@ export default function BuyerProfilePage() {
   }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on mount/id change
     load();
   }, [load]);
 

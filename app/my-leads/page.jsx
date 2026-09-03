@@ -36,6 +36,7 @@ export default function MyLeadsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on mount
     load();
   }, [load]);
 
@@ -70,6 +71,7 @@ export default function MyLeadsPage() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold text-yellow-400">My Leads</h1>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download, not page navigation */}
           <a
             href="/api/leads/export"
             className="border border-neutral-700 rounded px-3 py-2 text-sm hover:border-yellow-500"

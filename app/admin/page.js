@@ -229,6 +229,19 @@ export default function AdminDashboardPage() {
                     Manually assign a plan to any user and see their unlock quota usage (no payment gateway wired up).
                   </p>
                 </Link>
+
+                <Link
+                  href="/admin/leads"
+                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">🎯</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Lead Pipeline Activity
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    See every user&apos;s saved leads across the pipeline — filter by company, status, or entity type.
+                  </p>
+                </Link>
               </div>
             </div>
           )}

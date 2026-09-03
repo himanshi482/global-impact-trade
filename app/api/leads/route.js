@@ -7,15 +7,15 @@
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rateLimit';
+import { requireUser } from '@/lib/session';
+import { rateLimitResponse } from '@/lib/rateLimit';
 import { VALID_ENTITY_TYPES, VALID_STATUSES, sanitizeNotes, clampScore } from '@/lib/leads';
 
 export async function GET(request) {
-  const user = await requireUser(request).catch(() => null);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `leads-list:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
@@ -77,10 +77,10 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const user = await requireUser(request).catch(() => null);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `leads-create:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
   const body = await request.json().catch(() => ({}));

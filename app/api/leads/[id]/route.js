@@ -8,18 +8,19 @@
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rateLimit';
+import { requireUser } from '@/lib/session';
+import { rateLimitResponse } from '@/lib/rateLimit';
 import { VALID_STATUSES, sanitizeNotes } from '@/lib/leads';
 
 export async function PUT(request, { params }) {
-  const user = await requireUser(request).catch(() => null);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `leads-update:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
-  const leadId = parseInt(params.id, 10);
+  const { id } = await params;
+  const leadId = parseInt(id, 10);
   if (!Number.isInteger(leadId) || leadId <= 0) {
     return NextResponse.json({ error: 'Invalid lead id' }, { status: 400 });
   }
@@ -58,13 +59,14 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const user = await requireUser(request).catch(() => null);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `leads-delete:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
-  const leadId = parseInt(params.id, 10);
+  const { id } = await params;
+  const leadId = parseInt(id, 10);
   if (!Number.isInteger(leadId) || leadId <= 0) {
     return NextResponse.json({ error: 'Invalid lead id' }, { status: 400 });
   }

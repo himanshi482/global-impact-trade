@@ -188,7 +188,7 @@ async function main() {
       adminId = result.insertId;
       await connection.query(
         `INSERT INTO subscriptions (user_id, plan, status, start_date)
-         VALUES (?, 'ENTERPRISE', 'ACTIVE', CURDATE())`,
+         VALUES (?, 'CONQUER', 'ACTIVE', CURDATE())`,
         [adminId]
       );
       console.log(`admin user created (id ${adminId})`);

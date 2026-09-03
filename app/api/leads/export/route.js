@@ -6,8 +6,8 @@
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rateLimit';
+import { requireUser } from '@/lib/session';
+import { rateLimitResponse } from '@/lib/rateLimit';
 
 const CSV_HEADERS = [
   'Company',
@@ -40,10 +40,10 @@ function toCsvRow(fields) {
 }
 
 export async function GET(request) {
-  const user = await requireUser(request).catch(() => null);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `leads-export:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
   const rows = await query(

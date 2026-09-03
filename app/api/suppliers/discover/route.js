@@ -1,38 +1,31 @@
 // app/api/suppliers/discover/route.js
 // Stage 3 Phase 2 — GET /api/suppliers/discover
 // Mirrors app/api/buyers/discover/route.js — see that file for full
-// commentary on assumptions. Adjust table/column names as needed.
+// commentary.
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rateLimit';
+import { requireUser } from '@/lib/session';
+import { rateLimitResponse } from '@/lib/rateLimit';
 import { computeLeadScore } from '@/lib/leadScoring';
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 20;
 
 const SORT_MAP = {
-  relevance: 's.shipment_count DESC, s.total_shipment_value DESC',
+  relevance: 'IFNULL(sh.shipment_count, 0) DESC, IFNULL(sh.total_shipment_value, 0) DESC',
   leadScore: null,
-  activity: 's.shipment_count DESC',
-  value: 's.total_shipment_value DESC',
-  verification: 's.verified DESC, s.shipment_count DESC',
+  activity: 'IFNULL(sh.shipment_count, 0) DESC',
+  value: 'IFNULL(sh.total_shipment_value, 0) DESC',
+  verification: 's.verified DESC, IFNULL(sh.shipment_count, 0) DESC',
   name: 's.company_name ASC',
 };
 
 export async function GET(request) {
-  let user;
-  try {
-    user = await requireUser(request);
-  } catch {
-    user = null;
-  }
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `suppliers-discover:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
@@ -44,7 +37,7 @@ export async function GET(request) {
   const verifiedParam = searchParams.get('verified');
   const minShipments = parseInt(searchParams.get('minShipments') || '0', 10) || 0;
   const minValue = parseFloat(searchParams.get('minValue') || '0') || 0;
-  const sort = SORT_MAP.hasOwnProperty(searchParams.get('sort') || '')
+  const sort = Object.prototype.hasOwnProperty.call(SORT_MAP, searchParams.get('sort') || '')
     ? searchParams.get('sort')
     : 'relevance';
   const limit = Math.min(
@@ -81,25 +74,38 @@ export async function GET(request) {
     params.push(verifiedParam === 'true' ? 1 : 0);
   }
   if (minShipments > 0) {
-    where.push('s.shipment_count >= ?');
+    where.push('IFNULL(sh.shipment_count, 0) >= ?');
     params.push(minShipments);
   }
   if (minValue > 0) {
-    where.push('s.total_shipment_value >= ?');
+    where.push('IFNULL(sh.total_shipment_value, 0) >= ?');
     params.push(minValue);
   }
+
+  // Suppliers table has no shipment stats either — matched by company name
+  // (exporter = supplier's name) against the shipments table.
+  const shipmentJoin = `
+    LEFT JOIN (
+      SELECT exporter AS company_name,
+             COUNT(*) AS shipment_count,
+             SUM(shipment_value) AS total_shipment_value,
+             MAX(shipment_date) AS last_shipment_date
+      FROM shipments
+      GROUP BY exporter
+    ) sh ON sh.company_name = s.company_name
+  `;
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const countRows = await query(
-    `SELECT COUNT(*) AS total FROM suppliers s ${whereClause}`,
+    `SELECT COUNT(*) AS total FROM suppliers s ${shipmentJoin} ${whereClause}`,
     params
   );
   const total = countRows[0]?.total || 0;
 
   const needsJsSort = sort === 'leadScore';
   const orderClause = needsJsSort
-    ? 'ORDER BY s.shipment_count DESC, s.total_shipment_value DESC'
+    ? 'ORDER BY IFNULL(sh.shipment_count, 0) DESC, IFNULL(sh.total_shipment_value, 0) DESC'
     : `ORDER BY ${SORT_MAP[sort]}`;
 
   const fetchLimit = needsJsSort ? Math.min(MAX_LIMIT * 5, total || MAX_LIMIT * 5) : limit;
@@ -107,10 +113,13 @@ export async function GET(request) {
 
   const rows = await query(
     `SELECT
-        s.id, s.company_name, s.country, s.product, s.hs_code,
-        s.shipment_count, s.total_shipment_value, s.verified,
-        s.last_shipment_date, s.email, s.phone, s.contact_person, s.website
+        s.id, s.company_name, s.country, s.product, s.hs_code, s.verified,
+        s.email, s.phone, s.contact_person, s.website,
+        IFNULL(sh.shipment_count, 0) AS shipment_count,
+        IFNULL(sh.total_shipment_value, 0) AS total_shipment_value,
+        sh.last_shipment_date
      FROM suppliers s
+     ${shipmentJoin}
      ${whereClause}
      ${orderClause}
      LIMIT ? OFFSET ?`,
@@ -137,7 +146,7 @@ export async function GET(request) {
       companyName: row.company_name,
       country: row.country,
       product: row.product,
-      hsCode: String(row.hs_code),
+      hsCode: row.hs_code != null ? String(row.hs_code) : null,
       shipmentCount: row.shipment_count,
       totalShipmentValue: row.total_shipment_value,
       verified: !!row.verified,
@@ -174,9 +183,10 @@ export async function GET(request) {
 }
 
 async function getUnlockedEntityIds(userId, entityType) {
+  const column = entityType === 'BUYER' ? 'buyer_id' : 'supplier_id';
   const rows = await query(
-    `SELECT entity_id FROM contact_unlocks WHERE user_id = ? AND entity_type = ?`,
-    [userId, entityType]
+    `SELECT ${column} AS entity_id FROM unlock_requests WHERE user_id = ? AND status = 'GRANTED' AND ${column} IS NOT NULL`,
+    [userId]
   );
   return new Set(rows.map((r) => r.entity_id));
 }

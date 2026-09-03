@@ -35,6 +35,7 @@ export default function AdminLeadsPage() {
   }, [filters, page]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on filter/page change
     load();
   }, [load]);
 

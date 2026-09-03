@@ -9,10 +9,10 @@
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS saved_leads (
-  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id       INT UNSIGNED NOT NULL,
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT NOT NULL,
   entity_type   ENUM('BUYER', 'SUPPLIER') NOT NULL,
-  entity_id     INT UNSIGNED NOT NULL,
+  entity_id     INT NOT NULL,
   lead_score    TINYINT UNSIGNED NOT NULL DEFAULT 0,
   status        ENUM('NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATING', 'WON', 'LOST')
                   NOT NULL DEFAULT 'NEW',

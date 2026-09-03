@@ -3,7 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/session';
 import { VALID_ENTITY_TYPES, VALID_STATUSES } from '@/lib/leads';
 
 const MAX_LIMIT = 100;
@@ -17,8 +17,8 @@ const SORT_MAP = {
 };
 
 export async function GET(request) {
-  const user = await requireUser(request).catch(() => null);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof Response) return user;
   if (user.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

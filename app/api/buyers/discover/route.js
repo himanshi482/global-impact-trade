@@ -1,49 +1,29 @@
 // app/api/buyers/discover/route.js
 // Stage 3 Phase 2 — GET /api/buyers/discover
-//
-// ASSUMPTIONS (adjust import paths to match your actual repo):
-//   - lib/db.js           exports `query(sql, params)` over the mysql2 pool
-//   - lib/auth.js         exports `requireUser(request)` -> { id, role, ... } | throws/returns null
-//   - lib/rateLimit.js    exports `rateLimit(request, key)` -> throws/returns 429 response
-//   - buyers table has columns roughly: id, company_name, country, product,
-//     hs_code, hs_chapter, shipment_count, total_shipment_value, verified,
-//     last_shipment_date, email, phone, contact_person, website
-//   - unlocks table (or equivalent) records user_id + entity_type + entity_id
-//     for the existing /api/unlock system — reused here read-only.
-//
-// If your actual table/column names differ, only the SQL in this file
-// needs to change — the request/response contract stays the same.
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rateLimit';
+import { requireUser } from '@/lib/session';
+import { rateLimitResponse } from '@/lib/rateLimit';
 import { computeLeadScore } from '@/lib/leadScoring';
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 20;
 
 const SORT_MAP = {
-  relevance: 'b.shipment_count DESC, b.total_shipment_value DESC',
+  relevance: 'IFNULL(sh.shipment_count, 0) DESC, IFNULL(sh.total_shipment_value, 0) DESC',
   leadScore: null, // computed in JS after fetch; see below
-  activity: 'b.shipment_count DESC',
-  value: 'b.total_shipment_value DESC',
-  verification: 'b.verified DESC, b.shipment_count DESC',
+  activity: 'IFNULL(sh.shipment_count, 0) DESC',
+  value: 'IFNULL(sh.total_shipment_value, 0) DESC',
+  verification: 'b.verified DESC, IFNULL(sh.shipment_count, 0) DESC',
   name: 'b.company_name ASC',
 };
 
 export async function GET(request) {
-  let user;
-  try {
-    user = await requireUser(request);
-  } catch {
-    user = null;
-  }
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const user = await requireUser();
+  if (user instanceof Response) return user;
 
-  const limited = await rateLimit(request, `buyers-discover:${user.id}`);
+  const limited = rateLimitResponse(request, 'general', String(user.id));
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
@@ -55,7 +35,7 @@ export async function GET(request) {
   const verifiedParam = searchParams.get('verified');
   const minShipments = parseInt(searchParams.get('minShipments') || '0', 10) || 0;
   const minValue = parseFloat(searchParams.get('minValue') || '0') || 0;
-  const sort = SORT_MAP.hasOwnProperty(searchParams.get('sort') || '')
+  const sort = Object.prototype.hasOwnProperty.call(SORT_MAP, searchParams.get('sort') || '')
     ? searchParams.get('sort')
     : 'relevance';
   const limit = Math.min(
@@ -93,19 +73,33 @@ export async function GET(request) {
     params.push(verifiedParam === 'true' ? 1 : 0);
   }
   if (minShipments > 0) {
-    where.push('b.shipment_count >= ?');
+    where.push('IFNULL(sh.shipment_count, 0) >= ?');
     params.push(minShipments);
   }
   if (minValue > 0) {
-    where.push('b.total_shipment_value >= ?');
+    where.push('IFNULL(sh.total_shipment_value, 0) >= ?');
     params.push(minValue);
   }
+
+  // The buyers table itself has no shipment stats — those live in the
+  // shipments table, matched by company name (importer = buyer's name).
+  // This correlated subquery aggregates them once per buyer.
+  const shipmentJoin = `
+    LEFT JOIN (
+      SELECT importer AS company_name,
+             COUNT(*) AS shipment_count,
+             SUM(shipment_value) AS total_shipment_value,
+             MAX(shipment_date) AS last_shipment_date
+      FROM shipments
+      GROUP BY importer
+    ) sh ON sh.company_name = b.company_name
+  `;
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   // Count for pagination metadata.
   const countRows = await query(
-    `SELECT COUNT(*) AS total FROM buyers b ${whereClause}`,
+    `SELECT COUNT(*) AS total FROM buyers b ${shipmentJoin} ${whereClause}`,
     params
   );
   const total = countRows[0]?.total || 0;
@@ -115,7 +109,7 @@ export async function GET(request) {
   // still respects LIMIT/OFFSET on the final, scored list.
   const needsJsSort = sort === 'leadScore';
   const orderClause = needsJsSort
-    ? 'ORDER BY b.shipment_count DESC, b.total_shipment_value DESC'
+    ? 'ORDER BY IFNULL(sh.shipment_count, 0) DESC, IFNULL(sh.total_shipment_value, 0) DESC'
     : `ORDER BY ${SORT_MAP[sort]}`;
 
   const fetchLimit = needsJsSort ? Math.min(MAX_LIMIT * 5, total || MAX_LIMIT * 5) : limit;
@@ -123,10 +117,13 @@ export async function GET(request) {
 
   const rows = await query(
     `SELECT
-        b.id, b.company_name, b.country, b.product, b.hs_code,
-        b.shipment_count, b.total_shipment_value, b.verified,
-        b.last_shipment_date, b.email, b.phone, b.contact_person, b.website
+        b.id, b.company_name, b.country, b.product, b.hs_code, b.verified,
+        b.email, b.phone, b.contact_person, b.website,
+        IFNULL(sh.shipment_count, 0) AS shipment_count,
+        IFNULL(sh.total_shipment_value, 0) AS total_shipment_value,
+        sh.last_shipment_date
      FROM buyers b
+     ${shipmentJoin}
      ${whereClause}
      ${orderClause}
      LIMIT ? OFFSET ?`,
@@ -153,7 +150,7 @@ export async function GET(request) {
       companyName: row.company_name,
       country: row.country,
       product: row.product,
-      hsCode: String(row.hs_code), // preserve leading zeroes
+      hsCode: row.hs_code != null ? String(row.hs_code) : null, // preserve leading zeroes
       shipmentCount: row.shipment_count,
       totalShipmentValue: row.total_shipment_value,
       verified: !!row.verified,
@@ -191,11 +188,11 @@ export async function GET(request) {
 }
 
 async function getUnlockedEntityIds(userId, entityType) {
-  // Reuses the EXISTING unlock system's data — read-only lookup here.
-  // Adjust table/column names to match your existing unlock schema.
+  // Reuses the EXISTING unlock system (unlock_requests table).
+  const column = entityType === 'BUYER' ? 'buyer_id' : 'supplier_id';
   const rows = await query(
-    `SELECT entity_id FROM contact_unlocks WHERE user_id = ? AND entity_type = ?`,
-    [userId, entityType]
+    `SELECT ${column} AS entity_id FROM unlock_requests WHERE user_id = ? AND status = 'GRANTED' AND ${column} IS NOT NULL`,
+    [userId]
   );
   return new Set(rows.map((r) => r.entity_id));
 }

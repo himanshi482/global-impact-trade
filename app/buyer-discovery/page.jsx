@@ -9,12 +9,11 @@
 // <YourNavigation> / <YourFooter> for the real components.
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 function BuyerDiscoveryInner() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [filters, setFilters] = useState({
     q: '',
@@ -55,6 +54,7 @@ function BuyerDiscoveryInner() {
   }, [filters, page, limit]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on filter/page change
     fetchResults();
   }, [fetchResults]);
 
