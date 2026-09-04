@@ -13,7 +13,7 @@ export default function ExportPlannerReportPage() {
     try {
       const stored = sessionStorage.getItem('gb_current_export_plan');
       if (stored) {
-        setAnalysis(JSON.parse(stored));
+        Promise.resolve(JSON.parse(stored)).then(setAnalysis);
       }
     } catch {}
   }, []);

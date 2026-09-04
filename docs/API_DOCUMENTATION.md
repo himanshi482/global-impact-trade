@@ -551,6 +551,20 @@ Saves a new export plan. If `analysisResult` is omitted, the engine re-runs anal
 - **Request Body**: `{ "name", "hsCode", "product", "originCountry", "targetCountry", "price", "quantity", "shipping", "insurance", "otherCosts", "targetSellingPrice", "analysisResult?" }`
 - **Success Response (`201 Created`)**: `{ "id": 7, "message": "Export plan saved successfully" }`
 
+## Stage 4 APIs
+
+`GET/POST /api/alerts` and `PUT/DELETE /api/alerts/[id]` manage ownership-scoped market alerts. Alert criteria are evaluated only against database-backed intelligence; no synthetic alerts are generated.
+
+`GET /api/notifications`, `PUT /api/notifications/[id]/read`, and `PUT /api/notifications/read-all` provide ownership-scoped notification access and read state updates.
+
+`GET /api/admin/analytics?range=7|30|90|all` returns aggregate administrator metrics, including users, subscriptions, saved analyses, saved export plans, unlocks, lead status distribution, and in-process API metrics. It never returns private contact data.
+
+Market analysis responses include `dataConfidence`, `historicalTrend`, and score `factors`. The default source is the GlobeBridge database. Live external trade data is unavailable unless a real provider adapter and credentials are configured through environment variables; tariff and trade values are never fabricated.
+
+Authenticated mutations apply same-origin validation when browsers send an `Origin` header. `TRUST_PROXY=true` must only be used behind a proxy that overwrites forwarded client headers. Run migrations before using Stage 4 tables, then run `npm run lint`, `npm run build`, and the complete E2E suite.
+
+`POST /api/internal/alerts/evaluate` is a server-to-server scheduled-job endpoint. It requires the server-only `ALERT_CRON_SECRET` value in the `x-alert-cron-secret` header. It evaluates real active alerts, writes deduplicated alert and follow-up notifications, and updates `last_triggered_at`. It must be invoked by a trusted scheduler and is never called directly by browser clients.
+
 ---
 
 #### `GET /api/export-planner/saved/[id]`

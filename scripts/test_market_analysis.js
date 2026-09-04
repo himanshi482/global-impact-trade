@@ -1,6 +1,8 @@
-const mysql = require('mysql2/promise');
-const { SignJWT } = require('jose');
-require('dotenv').config();
+import mysql from 'mysql2/promise';
+import { SignJWT } from 'jose';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-only-secret-change-me';
 

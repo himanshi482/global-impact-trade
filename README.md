@@ -166,6 +166,16 @@ The Export Planner acts as a **"control tower"** that connects Market Intelligen
 - **Dashboard**: Compact Export Intelligence widget showing corridor score, readiness status, risk level, and active lead count
 - **Nav**: "Export Planner" navigation link added after "My Leads" for all users
 
+## Stage 4 Production Readiness
+
+Stage 4 adds strict unlock validation and transactional quota consumption, same-origin protection for authenticated mutations, configurable trusted-proxy handling, database-backed market alerts and notifications, historical trend helpers, formal data-confidence metadata, deterministic lead intelligence, aggregate admin analytics, and lightweight API metrics.
+
+Trade data defaults to `TRADE_DATA_PROVIDER=database` and is sourced from the GlobeBridge database. Live external trade data is not available unless a real provider adapter is configured; the application never fabricates trade, tariff, trend, or confidence values. HS codes remain strings, including leading-zero values such as `010121`.
+
+Run `npm run db:migrate` before using Stage 4 tables. The complete test command remains `DISABLE_RATE_LIMIT=true npm run test:e2e`; run `npm run lint` and `npm run build` before deployment. Set `TRUST_PROXY=true` only when a trusted deployment proxy overwrites forwarded client headers. No real credentials belong in `.env.example` or source control.
+
+For scheduled alert evaluation, configure `ALERT_CRON_SECRET` on the server and invoke `POST /api/internal/alerts/evaluate` with the `x-alert-cron-secret` header from a trusted scheduled HTTP job. The endpoint evaluates active alerts against current database records, creates deduplicated notifications, and creates deduplicated follow-up reminders. Metrics in `lib/apiObservability.js` are process-local and reset when the server restarts.
+
 ---
 
 ## API Reference

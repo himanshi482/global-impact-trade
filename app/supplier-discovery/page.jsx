@@ -55,7 +55,7 @@ function SupplierDiscoveryInner() {
   }, [filters, page, limit]);
 
   useEffect(() => {
-    fetchResults();
+    Promise.resolve().then(fetchResults);
   }, [fetchResults]);
 
   const handleFilterChange = (key, value) => {

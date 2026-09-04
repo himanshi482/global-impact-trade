@@ -21,7 +21,7 @@
 // Q. missing tariff data
 // R. no fake/random values
 
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Stage 3 Phase 3: Export Opportunity Planner & Decision Support', () => {
 

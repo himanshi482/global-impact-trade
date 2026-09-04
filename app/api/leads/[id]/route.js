@@ -10,9 +10,14 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { requireUser } from '@/lib/session';
 import { rateLimitResponse } from '@/lib/rateLimit';
-import { VALID_STATUSES, sanitizeNotes } from '@/lib/leads';
+import { sanitizeNotes } from '@/lib/leads';
+import { leadUpdateSchema, validateBody } from '@/lib/validation';
+import { sameOriginResponse } from '@/lib/csrf';
+import { createNotification } from '@/lib/notifications';
 
 export async function PUT(request, { params }) {
+  const csrfError = sameOriginResponse(request);
+  if (csrfError) return csrfError;
   const user = await requireUser();
   if (user instanceof Response) return user;
 
@@ -25,21 +30,34 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: 'Invalid lead id' }, { status: 400 });
   }
 
-  const body = await request.json().catch(() => ({}));
+  const body = await request.json().catch(() => null);
+  const { data, error } = validateBody(leadUpdateSchema, body);
+  if (error) return NextResponse.json({ error }, { status: 400 });
   const updates = [];
   const values = [];
-
-  if (body.status !== undefined) {
-    if (!VALID_STATUSES.includes(body.status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
-    }
-    updates.push('status = ?');
-    values.push(body.status);
+  let previousStatus = null;
+  if (data.status !== undefined) {
+    const current = await query('SELECT status FROM saved_leads WHERE id = ? AND user_id = ?', [leadId, user.id]);
+    if (!current.length) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+    previousStatus = current[0].status;
   }
 
-  if (body.notes !== undefined) {
+  if (data.status !== undefined) {
+    updates.push('status = ?');
+    values.push(data.status);
+  }
+
+  if (data.notes !== undefined) {
     updates.push('notes = ?');
-    values.push(sanitizeNotes(body.notes));
+    values.push(sanitizeNotes(data.notes));
+  }
+  if (data.nextFollowUpAt !== undefined) {
+    updates.push('next_follow_up_at = ?');
+    values.push(data.nextFollowUpAt);
+  }
+  if (data.lastContactedAt !== undefined) {
+    updates.push('last_contacted_at = ?');
+    values.push(data.lastContactedAt);
   }
 
   if (updates.length === 0) {
@@ -55,10 +73,16 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
   }
 
+  if (data.status !== undefined && previousStatus !== data.status) {
+    await createNotification({ userId: user.id, type: 'LEAD', title: 'Lead status updated', message: `Lead status changed to ${data.status}.`, referenceId: leadId });
+  }
+
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request, { params }) {
+  const csrfError = sameOriginResponse(request);
+  if (csrfError) return csrfError;
   const user = await requireUser();
   if (user instanceof Response) return user;
 

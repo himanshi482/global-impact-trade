@@ -16,6 +16,8 @@ const publicNavLinks = [
   { href: "/buyer-discovery", label: "Buyers" },
   { href: "/my-leads", label: "My Leads" },
   { href: "/export-planner", label: "Export Planner", badge: "New" },
+  { href: "/alerts", label: "Alerts" },
+  { href: "/notifications", label: "Notifications" },
   { href: "/features", label: "Features" },
   { href: "/plans-pricing", label: "Pricing" },
 ];
@@ -31,6 +33,8 @@ const appNavLinks = [
   { href: "/buyer-discovery", label: "Buyers" },
   { href: "/my-leads", label: "My Leads" },
   { href: "/export-planner", label: "Export Planner", badge: "New" },
+  { href: "/alerts", label: "Alerts" },
+  { href: "/notifications", label: "Notifications" },
   { href: "/features", label: "Features" },
   { href: "/plans-pricing", label: "Pricing" },
 ];
@@ -41,8 +45,8 @@ export default function Nav() {
   const pathname = usePathname();
 
   const activeLinks = user
-    ? (user.role === "admin"
-        ? [...appNavLinks, { href: "/admin/leads", label: "Admin Leads", badge: "Admin" }]
+    ? (user.role === "ADMIN" || user.role === "admin"
+      ? [...appNavLinks, { href: "/admin/leads", label: "Admin Leads", badge: "Admin" }, { href: "/admin/analytics", label: "Analytics", badge: "Admin" }]
         : appNavLinks)
     : publicNavLinks;
 

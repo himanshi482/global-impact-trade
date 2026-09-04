@@ -82,7 +82,7 @@ function ExportPlannerContent() {
   }, [hsCode, product, originCountry, targetCountry, price, quantity, shipping, insurance, otherCosts, targetSellingPrice]);
 
   useEffect(() => {
-    runAnalysis();
+    Promise.resolve().then(runAnalysis);
   }, [runAnalysis]);
 
   const handleSavePlan = async () => {

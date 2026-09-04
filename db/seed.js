@@ -7,17 +7,18 @@
 //
 // Run with: npm run db:seed
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-require("dotenv").config();
-const bcrypt = require("bcryptjs");
-const mysql = require("mysql2/promise");
+import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
+import mysql from "mysql2/promise";
 
-const {
+import {
   HS_CHAPTERS,
   BUYER_ENTITIES,
   SELLER_ENTITIES,
   RECENT_SHIPMENTS,
-} = require("../data/tradeData.js");
+} from "../data/tradeData.js";
+
+dotenv.config();
 
 // tradeData.js volume strings look like "3,850 MT" / "24,000 KGS" — pull the
 // leading number out for the DECIMAL columns, keep the original string too

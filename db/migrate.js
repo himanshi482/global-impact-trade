@@ -5,11 +5,16 @@
 // Tracks applied migrations in a `_migrations` table so re-running this is
 // safe — already-applied files are skipped.
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-const fs = require("fs");
-const path = require("path");
-const mysql = require("mysql2/promise");
-require("dotenv").config();
+import fs from "fs";
+import path from "path";
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const MIGRATIONS_DIR = path.join(__dirname, "migrations");
 

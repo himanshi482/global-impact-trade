@@ -1,5 +1,7 @@
-const mysql = require('mysql2/promise');
-require('dotenv').config();
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005';
 

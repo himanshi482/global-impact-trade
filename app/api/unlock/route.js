@@ -1,6 +1,8 @@
-import { query } from "@/lib/db";
+import { query, transaction } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { getRemainingUnlocks } from "@/lib/limits";
+import { unlockSchema, validateBody } from "@/lib/validation";
+import { sameOriginResponse } from "@/lib/csrf";
 
 export async function GET(request) {
   const user = await requireUser();
@@ -25,6 +27,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const csrfError = sameOriginResponse(request);
+  if (csrfError) return csrfError;
   const user = await requireUser();
   if (user instanceof Response) return user;
 
@@ -35,40 +39,59 @@ export async function POST(request) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { buyerId, supplierId } = body;
-  if (!buyerId && !supplierId) {
-    return Response.json({ error: "buyerId or supplierId is required" }, { status: 400 });
-  }
+  const { data, error } = validateBody(unlockSchema, body);
+  if (error) return Response.json({ error }, { status: 400 });
+
+  const { buyerId = null, supplierId = null } = data;
+  const entityTable = buyerId ? "buyers" : "suppliers";
+  const entityId = buyerId || supplierId;
 
   try {
-    const targetBuyerId = buyerId ? Number(buyerId) : null;
-    const targetSupplierId = supplierId ? Number(supplierId) : null;
+    const targetBuyerId = buyerId;
+    const targetSupplierId = supplierId;
 
-    // Check if already unlocked by this user
-    const existing = await query(
-      "SELECT id FROM unlock_requests WHERE user_id = ? AND (buyer_id = ? OR supplier_id = ?)",
-      [user.id, targetBuyerId, targetSupplierId]
-    );
+    const result = await transaction(async (conn) => {
+      // Lock before any reads so MySQL's repeatable-read snapshot includes
+      // unlocks committed by earlier requests for this user.
+      await conn.query("SELECT id FROM users WHERE id = ? FOR UPDATE", [user.id]);
+      const [entityRows] = await conn.query(`SELECT id FROM ${entityTable} WHERE id = ?`, [entityId]);
+      if (entityRows.length === 0) return { notFound: true };
 
-    if (existing.length === 0) {
-      // Check quota limits if not already unlocked
-      const quota = await getRemainingUnlocks(user.id);
-      if (!quota.isUnlimited && quota.remaining <= 0) {
-        return Response.json(
-          {
-            error: `Plan limit reached (${quota.used}/${quota.maxAllowed} contact unlocks used). Upgrade your subscription plan to unlock more entity contacts.`,
-            granted: false,
-            quota,
-          },
-          { status: 403 }
-        );
-      }
-
-      // Grant unlock
-      await query(
-        "INSERT INTO unlock_requests (user_id, buyer_id, supplier_id, status) VALUES (?, ?, ?, 'GRANTED')",
+      const [existing] = await conn.query(
+        "SELECT id FROM unlock_requests WHERE user_id = ? AND buyer_id <=> ? AND supplier_id <=> ? AND status = 'GRANTED'",
         [user.id, targetBuyerId, targetSupplierId]
       );
+      if (existing.length > 0) return { alreadyUnlocked: true };
+
+      const [subRows] = await conn.query(
+        "SELECT plan FROM subscriptions WHERE user_id = ? AND status = 'ACTIVE' LIMIT 1",
+        [user.id]
+      );
+      const [countRows] = await conn.query(
+        "SELECT COUNT(*) AS total FROM unlock_requests WHERE user_id = ?",
+        [user.id]
+      );
+      const plan = subRows[0]?.plan || "FREE";
+      const maxAllowed = { FREE: 10, GROWTH: 50, CONNECT: 200, CONQUER: 999999 }[plan] || 10;
+      const used = Number(countRows[0]?.total || 0);
+      if (maxAllowed < 999999 && used >= maxAllowed) {
+        return { quotaExceeded: true, plan, maxAllowed, used };
+      }
+
+      await conn.query(
+        "INSERT INTO unlock_requests (user_id, buyer_id, supplier_id, entity_key, status) VALUES (?, ?, ?, ?, 'GRANTED')",
+        [user.id, targetBuyerId, targetSupplierId, `${targetBuyerId || 0}:${targetSupplierId || 0}`]
+      );
+      return { granted: true };
+    });
+
+    if (result.notFound) return Response.json({ error: "Entity not found" }, { status: 404 });
+    if (result.quotaExceeded) {
+      return Response.json({
+        error: `Plan limit reached (${result.used}/${result.maxAllowed} contact unlocks used). Upgrade your subscription plan to unlock more entity contacts.`,
+        granted: false,
+        quota: await getRemainingUnlocks(user.id),
+      }, { status: 403 });
     }
 
     // Fetch entity contact details

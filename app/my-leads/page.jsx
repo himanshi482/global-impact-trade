@@ -45,7 +45,7 @@ export default function MyLeadsPage() {
   }, []);
 
   useEffect(() => {
-    load();
+    Promise.resolve().then(load);
   }, [load]);
 
   const updateStatus = async (leadId, newStatus) => {

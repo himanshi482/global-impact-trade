@@ -242,6 +242,19 @@ export default function AdminDashboardPage() {
                     See every user&apos;s saved leads across the pipeline — filter by company, status, or entity type.
                   </p>
                 </Link>
+
+                <Link
+                  href="/admin/analytics"
+                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">📊</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Platform Analytics &amp; Telemetry
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Live system usage metrics, conversion funnels, subscription distributions, and API performance.
+                  </p>
+                </Link>
               </div>
             </div>
           )}

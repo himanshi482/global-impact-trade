@@ -8,7 +8,7 @@
 // them (same config, same `DISABLE_RATE_LIMIT=true` test-mode support).
 // Replace the `TODO` seed/fixture calls with your actual test-data setup.
 
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Buyer Discovery', () => {
   test('search by HS code returns matching buyers', async ({ request }) => {

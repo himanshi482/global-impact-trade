@@ -10,6 +10,8 @@ import { query } from '@/lib/db';
 import { requireUser } from '@/lib/session';
 import { rateLimitResponse } from '@/lib/rateLimit';
 import { VALID_ENTITY_TYPES, VALID_STATUSES, sanitizeNotes, clampScore } from '@/lib/leads';
+import { getLeadIntelligence } from '@/lib/leadIntelligence';
+import { sameOriginResponse } from '@/lib/csrf';
 
 export async function GET(request) {
   const user = await requireUser();
@@ -36,7 +38,7 @@ export async function GET(request) {
 
   const rows = await query(
     `SELECT sl.id, sl.entity_type, sl.entity_id, sl.lead_score, sl.status,
-            sl.notes, sl.created_at, sl.updated_at,
+            sl.notes, sl.created_at, sl.updated_at, sl.next_follow_up_at, sl.last_contacted_at,
             CASE WHEN sl.entity_type = 'BUYER' THEN b.company_name ELSE s.company_name END AS company_name,
             CASE WHEN sl.entity_type = 'BUYER' THEN b.country ELSE s.country END AS country,
             CASE WHEN sl.entity_type = 'BUYER' THEN b.hs_code ELSE s.hs_code END AS hs_code
@@ -60,6 +62,9 @@ export async function GET(request) {
     notes: r.notes,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    nextFollowUpAt: r.next_follow_up_at,
+    lastContactedAt: r.last_contacted_at,
+    intelligence: getLeadIntelligence({ ...r, leadScore: r.lead_score, createdAt: r.created_at, updatedAt: r.updated_at }),
   }));
 
   const metrics = {
@@ -77,6 +82,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const csrfError = sameOriginResponse(request);
+  if (csrfError) return csrfError;
   const user = await requireUser();
   if (user instanceof Response) return user;
 

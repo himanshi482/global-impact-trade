@@ -31,7 +31,7 @@ export default function AdminLeadsPage() {
   }, [filters, page]);
 
   useEffect(() => {
-    load();
+    Promise.resolve().then(load);
   }, [load]);
 
   return (
