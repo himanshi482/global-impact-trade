@@ -5,7 +5,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 
-// Public navigation links when user is NOT logged in
+// Public navigation links when visitor is on home or unauthenticated
 const publicNavLinks = [
   { href: "/", label: "Home" },
   { href: "/trade-data", label: "Trade Data" },
@@ -14,29 +14,40 @@ const publicNavLinks = [
   { href: "/market-analysis", label: "Market Trends" },
   { href: "/supplier-discovery", label: "Suppliers" },
   { href: "/buyer-discovery", label: "Buyers" },
-  { href: "/my-leads", label: "My Leads" },
   { href: "/export-planner", label: "Export Planner", badge: "New" },
-  { href: "/alerts", label: "Alerts" },
-  { href: "/notifications", label: "Notifications" },
   { href: "/features", label: "Features" },
   { href: "/plans-pricing", label: "Pricing" },
 ];
 
-// App navigation links when user IS logged in
+// App workspace navigation links when user IS logged in (outside admin)
 const appNavLinks = [
   { href: "/dashboard", label: "Dashboard", highlight: true },
-  { href: "/trade-data", label: "Trade Data" },
-  { href: "/export-potential-test", label: "Export Test", badge: "Free" },
-  { href: "/hs-codes", label: "HS Codes" },
-  { href: "/market-analysis", label: "Market Trends" },
-  { href: "/supplier-discovery", label: "Suppliers" },
-  { href: "/buyer-discovery", label: "Buyers" },
-  { href: "/my-leads", label: "My Leads" },
-  { href: "/export-planner", label: "Export Planner", badge: "New" },
-  { href: "/alerts", label: "Alerts" },
+  { href: "/buyer-discovery", label: "Buyer Discovery" },
+  { href: "/supplier-discovery", label: "Supplier Discovery" },
+  { href: "/my-leads", label: "Lead CRM" },
+  { href: "/market-analysis", label: "Market Analysis" },
+  { href: "/export-planner", label: "Export Decision Planner", badge: "New" },
+  { href: "/alerts", label: "Market Alerts" },
   { href: "/notifications", label: "Notifications" },
-  { href: "/features", label: "Features" },
-  { href: "/plans-pricing", label: "Pricing" },
+  { href: "/trade-data", label: "Trade Data" },
+  { href: "/hs-codes", label: "HS Code & Tariffs" },
+  { href: "/export-potential-test", label: "Export Potential Test", badge: "Free" },
+  { href: "/profile", label: "Profile & Subscriptions" },
+];
+
+// Dedicated navigation bar ONLY displayed when inside the Admin Console (/admin/*)
+const adminNavLinks = [
+  { href: "/admin", label: "Control Center", highlight: true },
+  { href: "/admin/analytics", label: "Platform Analytics", badge: "Live" },
+  { href: "/admin/users", label: "User Management" },
+  { href: "/admin/leads", label: "Lead Management" },
+  { href: "/admin/subscriptions", label: "Subscriptions & Quotas" },
+  { href: "/admin/buyers", label: "Buyer CRUD" },
+  { href: "/admin/suppliers", label: "Supplier CRUD" },
+  { href: "/admin/shipments", label: "Shipment CRUD" },
+  { href: "/admin/hs-codes", label: "HS Code CRUD" },
+  { href: "/admin/requests", label: "Contact / Demo" },
+  { href: "/dashboard", label: "← User App" },
 ];
 
 export default function Nav() {
@@ -44,11 +55,21 @@ export default function Nav() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const activeLinks = user
-    ? (user.role === "ADMIN" || user.role === "admin"
-      ? [...appNavLinks, { href: "/admin/leads", label: "Admin Leads", badge: "Admin" }, { href: "/admin/analytics", label: "Analytics", badge: "Admin" }]
-        : appNavLinks)
-    : publicNavLinks;
+  const isAdmin = user && (user.role === "ADMIN" || user.role === "admin");
+  const isAdminSection = pathname.startsWith("/admin");
+  const isHomePage = pathname === "/";
+
+  // When on home page or visitor: strictly public links (no admin, no my-leads).
+  // When inside /admin: show admin navigation.
+  // Otherwise when logged in: show user app workspace links.
+  let activeLinks;
+  if (isAdminSection && isAdmin) {
+    activeLinks = adminNavLinks;
+  } else if (isHomePage || !user) {
+    activeLinks = publicNavLinks;
+  } else {
+    activeLinks = appNavLinks;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brass)]/25 bg-[var(--ink)]/95 backdrop-blur shadow-lg">
@@ -98,6 +119,16 @@ export default function Nav() {
         <div className="hidden items-center gap-2.5 md:flex shrink-0 ml-4">
           {user ? (
             <div className="flex items-center gap-3">
+              {/* Admin Console Switcher (Only visible to admins, separate from normal app links) */}
+              {isAdmin && (
+                <Link
+                  href={isAdminSection ? "/dashboard" : "/admin"}
+                  className="rounded-lg bg-amber-500/15 border border-amber-500/40 px-3 py-1.5 font-mono text-[11px] font-bold text-amber-300 hover:bg-amber-500/25 transition flex items-center gap-1.5"
+                >
+                  <span>{isAdminSection ? "← User Dashboard" : "🛡️ Admin Console"}</span>
+                </Link>
+              )}
+
               {/* User Profile Pill */}
               <Link
                 href="/dashboard"
@@ -114,7 +145,7 @@ export default function Nav() {
               <button
                 type="button"
                 onClick={logout}
-                className="rounded border border-rose-500/30 bg-rose-950/20 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-rose-300 hover:bg-rose-900/40 hover:text-white transition"
+                className="rounded border border-rose-500/30 bg-rose-950/20 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-rose-300 hover:bg-rose-900/40 hover:text-white transition cursor-pointer"
               >
                 Sign Out
               </button>
@@ -169,6 +200,15 @@ export default function Nav() {
 
           {user ? (
             <div className="mt-4 flex flex-col gap-2 pt-2 border-t border-[var(--brass)]/20">
+              {isAdmin && (
+                <Link
+                  href={isAdminSection ? "/dashboard" : "/admin"}
+                  onClick={() => setOpen(false)}
+                  className="rounded bg-amber-500/20 border border-amber-500/50 py-2.5 text-center font-mono text-xs uppercase tracking-wider text-amber-300 font-bold"
+                >
+                  {isAdminSection ? "← Return to User Dashboard" : "🛡️ Open Admin Console"}
+                </Link>
+              )}
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}

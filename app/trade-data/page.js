@@ -4,34 +4,46 @@ import { useState, useEffect } from "react";
 import FieldLabel from "../../components/FieldLabel";
 import EximSearch from "../../components/EximSearch";
 import AuthGuard from "../../components/AuthGuard";
+import { useAuth } from "../../context/AuthContext";
 import Link from "next/link";
 
 export default function TradeDataPage() {
+  const { user } = useAuth();
   const [shipments, setShipments] = useState([]);
   const [shipmentsLoading, setShipmentsLoading] = useState(true);
   const [shipmentsError, setShipmentsError] = useState(null);
 
   useEffect(() => {
+    if (!user) {
+      setShipmentsLoading(false);
+      return;
+    }
+
     let cancelled = false;
-    fetch("/api/shipments?limit=10&sort=shipmentDate:desc")
-      .then((res) => {
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+    fetch("/api/shipments?limit=10&sort=shipmentDate:desc", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) {
+          if (!cancelled) setShipmentsError("Please sign in with an active account to view shipments.");
+          return null;
+        }
         return res.json();
       })
       .then((json) => {
-        if (!cancelled) setShipments(json.data || []);
+        if (!cancelled && json?.data) {
+          setShipments(json.data);
+        }
       })
       .catch((err) => {
-        console.error("GET /api/shipments failed:", err);
         if (!cancelled) setShipmentsError("Couldn't load the live manifest feed.");
       })
       .finally(() => {
         if (!cancelled) setShipmentsLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   return (
     <AuthGuard>

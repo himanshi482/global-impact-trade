@@ -56,10 +56,30 @@ const unlockableFeatures = [
 ];
 
 const portalRoutes = [
-  { label: "Buyer Discovery", href: "/buyer-discovery", desc: "Access verified global importers & foreign procurement contacts", bg: "from-blue-700/40 to-blue-950/60 border-blue-500/40 text-blue-400 hover:border-blue-400", btn: "bg-blue-600 hover:bg-blue-500 text-white" },
-  { label: "Supplier Discovery", href: "/supplier-discovery", desc: "Discover active manufacturers, exporters & supply chain partners", bg: "from-indigo-700/40 to-indigo-950/60 border-indigo-500/40 text-indigo-400 hover:border-indigo-400", btn: "bg-indigo-600 hover:bg-indigo-500 text-white" },
-  { label: "My Leads", href: "/my-leads", desc: "Track, manage, and contact your unlocked enterprise leads", bg: "from-emerald-700/40 to-emerald-950/60 border-emerald-500/40 text-emerald-400 hover:border-emerald-400", btn: "bg-emerald-600 hover:bg-emerald-500 text-white" },
-  { label: "Admin Leads", href: "/admin/leads", desc: "Admin portal for lead inventory, unlock approvals & pipeline", bg: "from-purple-700/40 to-purple-950/60 border-purple-500/40 text-purple-400 hover:border-purple-400", btn: "bg-purple-600 hover:bg-purple-500 text-white" },
+  {
+    icon: "🌍",
+    label: "Buyer Discovery",
+    href: "/buyer-discovery",
+    desc: "Access verified global importers & foreign procurement contacts",
+  },
+  {
+    icon: "🚢",
+    label: "Supplier Discovery",
+    href: "/supplier-discovery",
+    desc: "Discover active manufacturers, exporters & supply chain partners",
+  },
+  {
+    icon: "📊",
+    label: "Export Potential Test",
+    href: "/export-potential-test",
+    desc: "Benchmark trade readiness & get tailored market recommendations",
+  },
+  {
+    icon: "📑",
+    label: "HS Codes & Tariffs",
+    href: "/hs-codes",
+    desc: "Search 99 chapters & calculate customs duties across 181+ countries",
+  },
 ];
 
 export default function Home() {
@@ -83,23 +103,30 @@ export default function Home() {
             Discover verified foreign buyers, track competitor shipments, and calculate customs tariffs across 181+ countries. Register your business to unlock full platform access.
           </p>
 
-          {/* Quick Hub Navigation Cards */}
+          {/* Quick Hub Navigation Cards — Unified Theme */}
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto text-left">
             {portalRoutes.map((route) => (
               <Link
                 key={route.href}
                 href={route.href}
-                className={`group flex flex-col justify-between rounded-xl border bg-gradient-to-b p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${route.bg}`}
+                className="group flex flex-col justify-between rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-[var(--brass)] hover:shadow-xl hover:shadow-[var(--brass)]/5"
               >
                 <div>
-                  <h3 className="font-display text-lg text-[var(--paper)] group-hover:text-[var(--brass)] transition flex items-center justify-between">
-                    <span>{route.label}</span>
-                    <span className="text-xs font-mono opacity-60 group-hover:translate-x-1 transition-transform">→</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-2xl">{route.icon}</span>
+                    <span className="text-xs font-mono text-[var(--brass)] opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                      →
+                    </span>
+                  </div>
+                  <h3 className="font-display text-lg text-[var(--paper)] group-hover:text-[var(--brass)] transition">
+                    {route.label}
                   </h3>
-                  <p className="mt-2 text-xs font-mono text-[var(--muted)] leading-relaxed">{route.desc}</p>
+                  <p className="mt-2 text-xs font-mono text-[var(--muted)] leading-relaxed">
+                    {route.desc}
+                  </p>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10">
-                  <span className={`inline-block w-full py-2 px-3 text-center text-xs font-mono font-bold rounded shadow transition ${route.btn}`}>
+                <div className="mt-4 pt-3 border-t border-[var(--brass)]/15">
+                  <span className="inline-block w-full py-2 px-3 text-center text-xs font-mono font-bold rounded border border-[var(--brass)]/35 bg-[var(--brass)]/10 text-[var(--brass)] group-hover:bg-[var(--brass)] group-hover:text-[var(--ink)] transition">
                     Open {route.label}
                   </span>
                 </div>

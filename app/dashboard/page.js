@@ -60,19 +60,23 @@ export default function DashboardPage() {
     if (activeTab !== "shipments" || shipmentsStatus !== "idle") return;
     let cancelled = false;
 
-    fetch("/api/shipments?limit=10&sort=shipmentDate:desc")
-      .then((res) => {
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+    fetch("/api/shipments?limit=10&sort=shipmentDate:desc", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) {
+          if (cancelled) return null;
+          setShipmentsError("Couldn't load shipments right now.");
+          setShipmentsStatus("done");
+          return null;
+        }
         return res.json();
       })
       .then((json) => {
-        if (cancelled) return;
+        if (cancelled || !json) return;
         setShipments(json.data || []);
         setShipmentsStatus("done");
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error("GET /api/shipments failed:", err);
         setShipmentsError("Couldn't load shipments right now.");
         setShipmentsStatus("done");
       });
@@ -385,47 +389,89 @@ export default function DashboardPage() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  icon: "📊",
-                  title: "Export Potential Assessment",
-                  desc: "Test your product quality, capacity, and statutory export licenses for immediate international onboarding.",
-                  link: "/export-potential-test",
-                  btn: "Launch Potential Test"
+                  icon: "🌍",
+                  title: "Buyer Discovery",
+                  desc: "Search verified global importers and decision-maker contacts across 181+ countries.",
+                  link: "/buyer-discovery",
+                  btn: "Find Importers",
                 },
                 {
-                  icon: "📑",
-                  title: "HS Code & Tariff Directory",
-                  desc: "Browse 99 Chapters, look up Basic Customs Duty (BCD), SWS, IGST, and compute landed import costs.",
-                  link: "/hs-codes",
-                  btn: "Open HS Directory"
+                  icon: "🚢",
+                  title: "Supplier Discovery",
+                  desc: "Connect with verified manufacturers, exporters, and international trade suppliers.",
+                  link: "/supplier-discovery",
+                  btn: "Find Suppliers",
+                },
+                {
+                  icon: "🎯",
+                  title: "Lead CRM",
+                  desc: "Manage your active trade pipeline, record notes, set follow-up schedules, and track deal stages.",
+                  link: "/my-leads",
+                  btn: "Open Lead CRM",
                 },
                 {
                   icon: "📈",
-                  title: "World Market Analysis & Port Index",
-                  desc: "Analyze commodity flow growth, top exporting destinations, and maritime port dwell times.",
+                  title: "Market Analysis",
+                  desc: "AI-driven opportunity scoring, risk indicators, competitor volumes, and multi-country benchmarking.",
                   link: "/market-analysis",
-                  btn: "View Market Analytics"
+                  btn: "Analyze Markets",
                 },
                 {
-                  icon: "🕸️",
-                  title: "Nexus 2.0 Supply Chain Map",
-                  desc: "Visualize multi-tier buyer-seller webs, raw material origins, and competitor alternative sourcing.",
-                  link: "/features#nexus",
-                  btn: "Explore Nexus Map"
+                  icon: "🧭",
+                  title: "Export Decision Planner",
+                  desc: "Generate comprehensive export feasibility plans, compliance checklists, and market entry roadmaps.",
+                  link: "/export-planner",
+                  btn: "Create Export Plan",
                 },
                 {
-                  icon: "📅",
-                  title: "1-on-1 Strategy Demo",
-                  desc: "Schedule a personalized product walkthrough with our senior foreign trade intelligence specialist.",
-                  link: "/book-a-demo",
-                  btn: "Schedule Specialist Call"
+                  icon: "🔔",
+                  title: "Market Alerts",
+                  desc: "Configure automated triggers for score shifts, high risks, new buyer requests, and shipment spikes.",
+                  link: "/alerts",
+                  btn: "Configure Alerts",
+                },
+                {
+                  icon: "📬",
+                  title: "Notifications",
+                  desc: "Archive and inspect real-time trigger dispatches, lead follow-ups, and trade intelligence alerts.",
+                  link: "/notifications",
+                  btn: "View Notifications",
+                },
+                {
+                  icon: "📦",
+                  title: "Trade Data",
+                  desc: "Access granular Bill of Lading customs records, declared values, and port transaction histories.",
+                  link: "/trade-data",
+                  btn: "Explore Manifests",
+                },
+                {
+                  icon: "📑",
+                  title: "HS Code & Tariff Intelligence",
+                  desc: "Browse 99 ITC-HS chapters, calculate Basic Customs Duty (BCD), SWS, IGST, and RoDTEP benefits.",
+                  link: "/hs-codes",
+                  btn: "Calculate Tariffs",
+                },
+                {
+                  icon: "📊",
+                  title: "Export Potential Test",
+                  desc: "Algorithmic 5-pillar assessment evaluating business readiness, compliance, and international demand.",
+                  link: "/export-potential-test",
+                  btn: "Launch Readiness Test",
+                },
+                {
+                  icon: "👤",
+                  title: "Profile & Subscriptions",
+                  desc: "Manage business entity profiles, view contact unlock quotas, and upgrade subscription tiers.",
+                  link: "/profile",
+                  btn: "Manage Profile",
                 },
                 {
                   icon: "💳",
                   title: "Plans & Enterprise Pricing",
-                  desc: "Unlock bulk raw data downloads, API feeds into your ERP, and unlimited company director contacts.",
+                  desc: "Review available subscription tiers, unlock allocations, and enterprise API access packages.",
                   link: "/plans-pricing",
-                  btn: "Manage Subscription"
-                }
+                  btn: "View Plans",
+                },
               ].map((t) => (
                 <div
                   key={t.title}

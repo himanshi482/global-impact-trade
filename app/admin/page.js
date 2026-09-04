@@ -13,6 +13,10 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!user || (user.role !== "ADMIN" && user.role !== "admin")) {
+      setLoading(false);
+      return;
+    }
     async function loadStats() {
       try {
         const res = await fetch("/api/admin/stats", { credentials: "include" });
@@ -30,9 +34,9 @@ export default function AdminDashboardPage() {
       }
     }
     loadStats();
-  }, []);
+  }, [user]);
 
-  if (user && user.role !== "ADMIN") {
+  if (user && user.role !== "ADMIN" && user.role !== "admin") {
     return (
       <div className="min-h-screen bg-[var(--ink)] flex items-center justify-center p-6 font-mono text-center">
         <div className="rounded-xl border border-red-500/40 bg-[var(--ink-2)] p-8 max-w-md">
@@ -56,14 +60,14 @@ export default function AdminDashboardPage() {
     <AuthGuard>
       <main className="min-h-screen bg-[var(--ink)] py-12 px-6">
         <div className="mx-auto max-w-6xl">
-          <FieldLabel>Platform Administration &amp; Control Center</FieldLabel>
+          <FieldLabel>Platform Administration &amp; Governance</FieldLabel>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--brass)]/20 pb-6 mb-8">
             <div>
               <h1 className="font-display text-3xl md:text-4xl text-[var(--paper)]">
-                GlobeBridge Admin Console
+                Admin Control Center
               </h1>
               <p className="mt-1 text-xs text-[var(--muted)] font-mono">
-                Manage accounts, buyers, suppliers, shipments, HS codes, and incoming trade requests.
+                Centralized platform governance: analytics telemetry, accounts, lead pipeline, subscriptions, and database CRUD.
               </p>
             </div>
             <div className="flex gap-2 font-mono text-xs">
@@ -132,127 +136,136 @@ export default function AdminDashboardPage() {
                     {(stats?.pendingContacts || 0) + (stats?.pendingDemos || 0)}
                   </span>
                   <Link href="/admin/requests" className="mt-3 inline-block text-[11px] text-[var(--brass)] hover:underline">
-                    Review Leads →
+                    Review Inquiries →
                   </Link>
                 </div>
               </div>
 
-              {/* Sub-page Navigation Cards */}
+              {/* Sub-page Navigation Cards — Structured in Exact Order */}
               <div className="grid gap-6 md:grid-cols-3">
-                <Link
-                  href="/admin/users"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">👥</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    User Accounts &amp; Roles
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    View registered accounts, toggle administrator access, or deactivate users.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/buyers"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">🌍</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Buyers Database CRUD
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Add new international buyer entities, edit verification status, or update trade volumes.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/suppliers"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">🚢</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Suppliers Directory CRUD
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Manage global seller profiles, HS Code assignments, and export capacities.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/shipments"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">📦</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Shipments Records CRUD
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Create, edit, or delete bill of lading shipment records. Search by product, HS code, or country.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/hs-codes"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">📋</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    HS Codes Database CRUD
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Manage the ITC-HS code tariff database with duty rates. Add, edit, or remove HS code entries.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/requests"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">📬</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Contact &amp; Demo Requests
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Track incoming business inquiries and update lead status from NEW to CONTACTED or CLOSED.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/subscriptions"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">💳</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Subscription Plans &amp; Quotas
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Manually assign a plan to any user and see their unlock quota usage (no payment gateway wired up).
-                  </p>
-                </Link>
-
-                <Link
-                  href="/admin/leads"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
-                >
-                  <div className="text-2xl">🎯</div>
-                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Lead Pipeline Activity
-                  </h3>
-                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    See every user&apos;s saved leads across the pipeline — filter by company, status, or entity type.
-                  </p>
-                </Link>
-
+                {/* 1. Platform Analytics */}
                 <Link
                   href="/admin/analytics"
-                  className="rounded-xl border border-[var(--brass)]/25 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
                 >
                   <div className="text-2xl">📊</div>
                   <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
-                    Platform Analytics &amp; Telemetry
+                    Platform Analytics
                   </h3>
                   <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-                    Live system usage metrics, conversion funnels, subscription distributions, and API performance.
+                    Live system usage metrics, lead conversion funnels, subscription distributions, and API performance telemetry.
+                  </p>
+                </Link>
+
+                {/* 2. User Management */}
+                <Link
+                  href="/admin/users"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">👥</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    User Management
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    View registered user accounts, toggle administrator privileges, inspect verify status, or deactivate accounts.
+                  </p>
+                </Link>
+
+                {/* 3. Lead Management */}
+                <Link
+                  href="/admin/leads"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">🎯</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Lead Management
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Full oversight of saved prospective leads across all platform users — filter by company, status, or entity type.
+                  </p>
+                </Link>
+
+                {/* 4. Subscription & Quota Management */}
+                <Link
+                  href="/admin/subscriptions"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">💳</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Subscription &amp; Quota Management
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Manually assign plan tiers (Free, Growth, Connect, Conquer) and monitor contact unlock limits and quotas.
+                  </p>
+                </Link>
+
+                {/* 5. Buyer CRUD */}
+                <Link
+                  href="/admin/buyers"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">🌍</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Buyer CRUD
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Create, edit, verify, or delete foreign buyer entity profiles, import volumes, and direct procurement contacts.
+                  </p>
+                </Link>
+
+                {/* 6. Supplier CRUD */}
+                <Link
+                  href="/admin/suppliers"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">🚢</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Supplier CRUD
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Manage global supplier records, verification badges, product catalogs, HS code coverage, and export capacities.
+                  </p>
+                </Link>
+
+                {/* 7. Shipment CRUD */}
+                <Link
+                  href="/admin/shipments"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">📦</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Shipment CRUD
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Add, edit, or delete customs bill of lading records, container counts, declared CIF/FOB values, and port data.
+                  </p>
+                </Link>
+
+                {/* 8. HS Code CRUD */}
+                <Link
+                  href="/admin/hs-codes"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">📋</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    HS Code CRUD
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Manage the tariff classification database: add new 6-digit HS codes, update duty rates, and configure tax rules.
+                  </p>
+                </Link>
+
+                {/* 9. Contact/Demo Requests */}
+                <Link
+                  href="/admin/requests"
+                  className="rounded-xl border border-[var(--brass)]/30 bg-[var(--ink-2)] p-6 transition hover:border-[var(--brass)] hover:shadow-xl group"
+                >
+                  <div className="text-2xl">📬</div>
+                  <h3 className="font-display mt-3 text-xl text-[var(--paper)] group-hover:text-[var(--brass)]">
+                    Contact / Demo Requests
+                  </h3>
+                  <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                    Track incoming business leads, contact inquiries, and demo bookings. Update status to CONTACTED or CLOSED.
                   </p>
                 </Link>
               </div>
