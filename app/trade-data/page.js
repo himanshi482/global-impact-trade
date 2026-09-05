@@ -15,6 +15,7 @@ export default function TradeDataPage() {
 
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing loading state when there's no user to fetch for
       setShipmentsLoading(false);
       return;
     }

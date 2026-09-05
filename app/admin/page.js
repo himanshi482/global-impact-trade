@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!user || (user.role !== "ADMIN" && user.role !== "admin")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing loading state when user isn't an admin
       setLoading(false);
       return;
     }

@@ -1,0 +1,60 @@
+diff --git a/app/admin/analytics/page.js b/app/admin/analytics/page.js
+index d08491e..688511f 100644
+--- a/app/admin/analytics/page.js
++++ b/app/admin/analytics/page.js
+@@ -49,6 +49,7 @@ export default function AdminAnalyticsPage() {
+   }, [range]);
+ 
+   useEffect(() => {
++    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on mount
+     loadAnalytics();
+   }, [loadAnalytics]);
+ 
+diff --git a/app/admin/page.js b/app/admin/page.js
+index 6190c73..eb9899a 100644
+--- a/app/admin/page.js
++++ b/app/admin/page.js
+@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
+ 
+   useEffect(() => {
+     if (!user || (user.role !== "ADMIN" && user.role !== "admin")) {
++      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing loading state when user isn't an admin
+       setLoading(false);
+       return;
+     }
+diff --git a/app/alerts/page.js b/app/alerts/page.js
+index 3002281..73d58fe 100644
+--- a/app/alerts/page.js
++++ b/app/alerts/page.js
+@@ -86,6 +86,7 @@ export default function AlertsPage() {
+   }, []);
+ 
+   useEffect(() => {
++    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on mount
+     loadAlerts();
+   }, [loadAlerts]);
+ 
+diff --git a/app/notifications/page.js b/app/notifications/page.js
+index 79d2059..244cc21 100644
+--- a/app/notifications/page.js
++++ b/app/notifications/page.js
+@@ -79,6 +79,7 @@ export default function NotificationsPage() {
+   }, []);
+ 
+   useEffect(() => {
++    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on mount
+     loadNotifications();
+   }, [loadNotifications]);
+ 
+diff --git a/app/trade-data/page.js b/app/trade-data/page.js
+index dcd8063..aa39b0b 100644
+--- a/app/trade-data/page.js
++++ b/app/trade-data/page.js
+@@ -15,6 +15,7 @@ export default function TradeDataPage() {
+ 
+   useEffect(() => {
+     if (!user) {
++      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing loading state when there's no user to fetch for
+       setShipmentsLoading(false);
+       return;
+     }

@@ -79,6 +79,7 @@ export default function NotificationsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional data fetch on mount
     loadNotifications();
   }, [loadNotifications]);
 
