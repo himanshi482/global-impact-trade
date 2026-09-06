@@ -235,6 +235,7 @@ For scheduled alert evaluation, configure `ALERT_CRON_SECRET` on the server and 
 
 ### Admin Management APIs (Role Gated: `ADMIN`)
 - `GET /api/admin/stats` - Platform metric summary counters
+- `GET /api/admin/analytics?range=` - Aggregate platform usage metrics (users, subscriptions, leads, unlocks, alerts, notifications, API request counts)
 - `GET /api/admin/users` & `PUT /api/admin/users/[id]` & `DELETE /api/admin/users/[id]` - User management
 - `GET /api/admin/buyers` & `POST /api/admin/buyers` & `PUT /api/admin/buyers/[id]` & `DELETE /api/admin/buyers/[id]` - Buyers CRUD
 - `GET /api/admin/suppliers` & `POST /api/admin/suppliers` & `PUT /api/admin/suppliers/[id]` & `DELETE /api/admin/suppliers/[id]` - Suppliers CRUD
@@ -242,6 +243,16 @@ For scheduled alert evaluation, configure `ALERT_CRON_SECRET` on the server and 
 - `GET /api/admin/hs-codes` & `POST /api/admin/hs-codes` & `PUT /api/admin/hs-codes/[id]` & `DELETE /api/admin/hs-codes/[id]` - HS Codes CRUD
 - `GET /api/admin/requests` & `PUT /api/admin/requests/[id]` - Contact & demo lead status updates
 - `GET /api/admin/subscriptions` & `PUT /api/admin/subscriptions/[userId]` - Subscription plan management (FREE / GROWTH / CONNECT / CONQUER)
+- `GET/PUT/DELETE /api/admin/leads` — Admin-level CRM management across all users
+
+### Market Alerts & Notifications (Protected: `requireUser()`)
+- `GET /api/alerts` & `POST /api/alerts` - List / create saved market alerts (HS_CODE, COUNTRY, OPPORTUNITY_SCORE, BUYER_ACTIVITY, SHIPMENT_ACTIVITY, RISK_LEVEL)
+- `GET/PUT/DELETE /api/alerts/[id]` - Read, update, or delete a single alert (ownership enforced)
+- `POST /api/alerts/evaluate` - Manually evaluate the current user's active alerts against live data and dispatch notifications for matches
+- `GET /api/notifications` - List notifications, newest first
+- `PUT /api/notifications/[id]/read` & `PUT /api/notifications/read-all` - Mark one or all notifications as read
+- `DELETE /api/notifications/[id]` - Remove a notification
+- `POST /api/internal/alerts/evaluate` - Scheduled/cron evaluation of **all** users' active alerts; requires the `x-alert-cron-secret` header to match `ALERT_CRON_SECRET` (see Stage 4 section above) — intended to be called by an external scheduler (cron job, Vercel Cron, etc.), not by end users
 
 ---
 
@@ -250,6 +261,41 @@ For scheduled alert evaluation, configure `ALERT_CRON_SECRET` on the server and 
 | Plan | Contact Unlocks Quota | Features Included |
 |---|---|---|
 | **FREE** | 10 Contact Unlocks | 10 searches & entity contact views |
-| **GROWTH / PROFESSIONAL** | 50 Contact Unlocks | Advanced search, Nexus supply chain overview |
+| **GROWTH** | 50 Contact Unlocks | Advanced search, Nexus supply chain overview |
 | **CONNECT** | 200 Contact Unlocks / Mo | Multi-tier mapping & decision maker contacts |
-| **CONQUER / ENTERPRISE** | Unlimited Unlocks | Full raw dataset, API feeds & custom dossiers |
+| **CONQUER** | Unlimited Unlocks | Full raw dataset, API feeds & custom dossiers |
+
+---
+
+## Deployment
+
+This app needs two things in production: a place to run the Next.js server, and a MySQL database it can reach. Neither Render nor Vercel provide a free MySQL instance, so pair either one with an external free MySQL host such as [Aiven](https://aiven.io) or [Clever Cloud](https://www.clever-cloud.com/).
+
+> ⚠️ Free-tier terms (trial credits, idle sleep, storage caps) change frequently across providers — check each provider's current pricing page before committing, and never commit real `.env` values to source control.
+
+### Option A — Render (recommended for this codebase)
+`lib/db.js` uses a long-lived `mysql2` connection pool, which fits a traditional always-on server better than a serverless one. Render runs your app as a persistent process, so no extra tuning is needed.
+
+1. Create a free MySQL database on Aiven (or Clever Cloud) and note the host/port/user/password/database name.
+2. From your local machine, point `.env` at that database temporarily and run `npm run db:migrate` then `npm run db:seed` to provision tables and the default admin account. Revert `.env` back to your local DB afterwards.
+3. On [render.com](https://render.com), create a **Web Service** from this GitHub repo.
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+4. Add the environment variables below in Render's **Environment** tab (see [`.env.example`](./.env.example) for the full list): `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `AUTH_SECRET`, `NEXT_PUBLIC_APP_URL` (use the `.onrender.com` URL Render assigns).
+5. Deploy. Render's free tier sleeps after ~15 minutes of inactivity — the first request after a sleep will be slow (10–60s) while it wakes back up.
+6. Log in with the seeded admin account and change the password immediately.
+
+### Option B — Vercel
+Vercel's Hobby tier is free and has first-class Next.js support, but functions run serverless (a fresh instance per request), which doesn't naturally match a persistent connection pool — under sustained traffic you may see MySQL "too many connections" errors. Fine for demos/low traffic; consider a serverless-friendly pooling layer (e.g. PlanetScale's driver, or your DB provider's built-in pooler) before relying on it for real traffic.
+
+1. Provision and migrate/seed a free MySQL database the same way as Option A, steps 1–2.
+2. On [vercel.com](https://vercel.com), import this GitHub repo as a new project — build/start commands are auto-detected.
+3. Add the same environment variables as Option A under **Project Settings → Environment Variables**.
+4. Deploy, then copy the assigned `.vercel.app` URL into `NEXT_PUBLIC_APP_URL` and redeploy so the app picks it up.
+5. Log in with the seeded admin account and change the password immediately.
+
+### Scheduled Alert Evaluation in Production
+Whichever host you choose, `POST /api/internal/alerts/evaluate` needs to be called periodically (e.g. every 15–30 minutes) by an external scheduler — a cron job, GitHub Actions schedule, or your platform's native cron feature — with the `x-alert-cron-secret` header set to your `ALERT_CRON_SECRET` value. Nothing evaluates alerts automatically on its own.
+
+### Outgoing Email in Production
+`EMAIL_SERVER` / `EMAIL_FROM` are blank by default, which makes password-reset links log to the server console instead of emailing them — fine for local dev, not usable for real users. Configure a real SMTP provider (e.g. Resend, SendGrid) for these variables before inviting real users.
