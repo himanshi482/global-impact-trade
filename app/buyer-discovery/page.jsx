@@ -75,7 +75,9 @@ function BuyerDiscoveryInner() {
           leadScore: buyer.leadScore,
         }),
       });
-      if (res.status === 409) {
+      if (res.status === 401) {
+        alert('Please sign in to save leads to your account.');
+      } else if (res.status === 409) {
         alert('Lead already exists in your pipeline.');
       } else if (!res.ok) {
         alert('Could not save lead. Please try again.');

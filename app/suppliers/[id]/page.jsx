@@ -69,7 +69,10 @@ export default function SupplierProfilePage() {
           leadScore: supplier.leadScore,
         }),
       });
-      if (res.status === 409) setSaveState('duplicate');
+      if (res.status === 401) {
+        alert('Please sign in to save leads to your account.');
+        setSaveState('idle');
+      } else if (res.status === 409) setSaveState('duplicate');
       else if (!res.ok) setSaveState('error');
       else setSaveState('saved');
     } catch {
