@@ -10,6 +10,7 @@
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import mysql from "mysql2/promise";
+import { getSslConfig } from "./sslConfig.js";
 
 import {
   HS_CHAPTERS,
@@ -44,6 +45,7 @@ async function main() {
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "globebridge",
+    ...(getSslConfig() ? { ssl: getSslConfig() } : {}),
   });
 
   try {

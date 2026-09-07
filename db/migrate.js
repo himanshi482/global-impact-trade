@@ -10,6 +10,7 @@ import path from "path";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
+import { getSslConfig } from "./sslConfig.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ async function main() {
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     multipleStatements: true,
+    ...(getSslConfig() ? { ssl: getSslConfig() } : {}),
   });
 
   // Migration files may CREATE DATABASE IF NOT EXISTS on their own, but the
